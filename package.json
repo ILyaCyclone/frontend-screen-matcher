@@ -1,0 +1,29 @@
+{
+  "name": "change-detector",
+  "version": "0.0.1",
+  "dependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.0.0",
+    "puppeteer": "^1.0.0",
+    "pixelmatch": "^4.0.2",
+    "pngjs": "^3.4.0"
+  },
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Adusya/change-detector.git"
+  },
+  "author": "Adusya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Adusya/change-detector/issues"
+  },
+  "homepage": "https://github.com/Adusya/change-detector#readme",
+  "description": ""
+}

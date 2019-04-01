@@ -3,6 +3,7 @@ const expect = require('chai').expect;
 const pixelmatch = require('pixelmatch');
 const fs = require('fs');
 const PNG = require('pngjs').PNG;
+var path = require("path");
 
 const localhost = 'http://127.0.0.1:7001';
 
@@ -58,12 +59,15 @@ describe('checking for changes', function() {
 // - filePrefix is either "wide" or "narrow", since I'm automatically testing both.
 async function takeAndCompareScreenshot(page, route, filePrefix) {
     // If you didn't specify a file, use the name of the route.
-    let fileName = filePrefix + '/' + (route ? route : 'index');
+    let fileName = filePrefix + path.sep + (route ? route : 'index');
 
 
     // Start the browser, go to that page, and take a screenshot.
-    await page.goto(localhost.concat('/', route));
-    await page.screenshot({path: testDir.concat('/', fileName, '.png')});
+    await page.goto('http://miit.ru', {
+
+        timeout: 3000000
+    });
+    await page.screenshot({path: goldenDir.concat(path.sep, fileName, '.png')});
 
     // Test to see if it's right.
     return compareScreenshots(fileName);
@@ -71,8 +75,8 @@ async function takeAndCompareScreenshot(page, route, filePrefix) {
 
 function compareScreenshots(fileName) {
     return new Promise((resolve, reject) => {
-        const img1 = fs.createReadStream(testDir.concat('/', fileName, '.png')).pipe(new PNG()).on('parsed', doneReading);
-    const img2 = fs.createReadStream(goldenDir.concat('/', fileName, '.png')).pipe(new PNG()).on('parsed', doneReading);
+        const img1 = fs.createReadStream(testDir.concat(path.sep, fileName, '.png')).pipe(new PNG()).on('parsed', doneReading);
+    const img2 = fs.createReadStream(goldenDir.concat(path.sep, fileName, '.png')).pipe(new PNG()).on('parsed', doneReading);
 
     let filesRead = 0;
     function doneReading() {
@@ -89,7 +93,7 @@ function compareScreenshots(fileName) {
             img1.data, img2.data, diff.data, img1.width, img1.height,
             {threshold: 0.1, includeAA: true});
 
-        diff.pack().pipe(fs.createWriteStream(resultsDir.concat('/', fileName, '.png')));
+        diff.pack().pipe(fs.createWriteStream(resultsDir.concat(path.sep, fileName, '.png')));
         // The files should look the same.
         expect(numDiffPixels, 'number of different pixels').equal(0);
         resolve();
@@ -101,7 +105,7 @@ function checkForDirectory(directory) {
 
     if (!fs.existsSync(directory)) fs.mkdirSync(directory);
 
-    if (!fs.existsSync(directory.concat('/wide'))) fs.mkdirSync(directory.concat('/wide'));
-    if (!fs.existsSync(directory.concat('/narrow'))) fs.mkdirSync(directory.concat('/narrow'));
+    if (!fs.existsSync(directory.concat(path.sep, 'wide'))) fs.mkdirSync(directory.concat(path.sep, 'wide'));
+    if (!fs.existsSync(directory.concat(path.sep, 'narrow'))) fs.mkdirSync(directory.concat(path.sep, 'narrow'));
 
 }

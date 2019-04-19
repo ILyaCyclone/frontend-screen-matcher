@@ -5,6 +5,7 @@ const config = require('./config');
 const resolutions = config.resolutions;
 
 async function makeScreenshot(size, url, directory) {
+    directory = "golden";
     var savePath = config.directories[directory].path;
     var pageSize;
     if (isNaN(size))    {

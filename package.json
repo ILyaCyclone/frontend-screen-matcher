@@ -1,14 +1,7 @@
 {
   "name": "frontend-screen-matcher",
   "version": "0.1.0",
-  "dependencies": {
-    "chai": "^4.1.2",
-    "mocha": "^5.0.0",
-    "pixelmatch": "^4.0.2",
-    "pngjs": "^3.4.0",
-    "puppeteer": "^1.0.0",
-    "yargs": "^13.2.2"
-  },
+
   "main": "index.js",
   "directories": {
     "test": "tests"
@@ -28,5 +21,13 @@
   },
   "homepage": "https://github.com/Adusya/change-detector#readme",
   "description": "frontend-screen-matcher project",
-  "devDependencies": {}
+
+  "dependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.0.0",
+    "pixelmatch": "^4.0.2",
+    "pngjs": "^3.4.0",
+    "puppeteer": "^1.0.0",
+    "yargs": "^13.2.2"
+  }
 }

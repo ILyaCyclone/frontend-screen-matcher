@@ -1,11 +1,11 @@
 const puppeteer = require('puppeteer');
 const path = require("path");
 const fs = require("fs");
-const savePath = require('./config').directories['golden'].path;
+const config = require('./config');
+const resolutions = config.resolutions;
 
-const resolutions = require('./config').resolutions;
-
-    async function makeScreenshot(size, url) {
+async function makeScreenshot(size, url, directory) {
+    var savePath = config.directories[directory].path;
     var pageSize;
     if (isNaN(size))    {
         pageSize = resolutions[size].width;
@@ -23,7 +23,7 @@ const resolutions = require('./config').resolutions;
     await page.screenshot({path: savePath.concat(path.sep, fileName), fullPage: true});
     browser.close()
     return fileName;
-    }
+}
 
 function checkForDirectory(directory) {
 

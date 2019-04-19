@@ -10,7 +10,7 @@ const resolutions = require('./config').resolutions;
 
 yargs
     .usage('Usage: $0 <command> [options]')
-    .command(['screenshot [size] [url]', 's', 'sc'], 'make a screenshot', (yargs) => {
+    .command(['screenshot [size] [url] [path]', 's', 'sc'], 'make a screenshot', (yargs) => {
         yargs
             .positional('size', {
                 describe: 'size of screen',
@@ -18,36 +18,39 @@ yargs
             })
             .option('url', {
             alias: 'u',
-            default: addresses,
-            type: 'string'
+            default: addresses
+        })
+            .option('path', {
+            alias: 'p',
+            default: "test"
         })
     }, (argv) => {
-        makeScreenshot(argv.size, argv.url);
+        makeScreenshot(argv.size, argv.url, argv.path);
     }).command(['test','t'], 'start a test', (argv) => {
         mocha.run();
     })
     .argv
 
-function makeScreenshot(resolutions, pageUrls) {
+function makeScreenshot(resolutions, pageUrls, directory) {
 
     if (typeof resolutions == "string") {
         if (typeof pageUrls == "string") {
-            screenshotMaker.makeScreenshot(resolutions, pageUrls);
+            screenshotMaker.makeScreenshot(resolutions, pageUrls, directory);
         } else {
             var pagesMap = new Map(Object.entries(pageUrls));
             pagesMap.forEach(pages => {
-                screenshotMaker.makeScreenshot(resolutions, pages.address);
+                screenshotMaker.makeScreenshot(resolutions, pages.address, directory);
             });
         }
     } else {
         if (typeof pageUrls == "string") {
-            screenshotMaker.makeScreenshot(resolutions, pageUrls);
+            screenshotMaker.makeScreenshot(resolutions, pageUrls, directory);
         } else {
             var resolutionsMap = new Map(Object.entries(resolutions));
             resolutionsMap.forEach(resolution => {
                 var pagesMap = new Map(Object.entries(pageUrls));
                 pagesMap.forEach(pages => {
-                    screenshotMaker.makeScreenshot(resolution.width, pages.address);
+                    screenshotMaker.makeScreenshot(resolution.width, pages.address, directory);
                 });
             });
         }

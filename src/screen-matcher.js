@@ -4,9 +4,10 @@ const fs = require('fs');
 const PNG = require('pngjs').PNG;
 const path = require("path");
 
-const resolutions = require('./config.js').resolutions;
-const addresses= require('./config.js').addresses;
-const directories = require('./config.js').directories;
+const config = require('./config.js');
+const resolutions = config.resolutions;
+const addresses= config.addresses;
+const directories = config.directories;
 
 describe('checking for changes', function () {
     var size;

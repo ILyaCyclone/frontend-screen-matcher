@@ -5,8 +5,9 @@ const mocha = new Mocha({
     ui: 'bdd',
     reporter: 'list'}).addFile('./src/screen-matcher');
 
-const addresses = require('./config').addresses;
-const resolutions = require('./config').resolutions;
+const config = require('./config');
+const addresses = config.addresses;
+const resolutions = config.resolutions;
 
 yargs
     .usage('Usage: $0 <command> [options]')
@@ -25,7 +26,7 @@ yargs
             default: "test"
         })
     }, (argv) => {
-        makeScreenshot(argv.size, argv.url, argv.path);
+        screenshotMaker.makeScreenshots(argv.size, argv.url, argv.path);
     }).command(['test','t'], 'start a test', (argv) => {
         mocha.run();
     })
@@ -44,7 +45,10 @@ function makeScreenshot(resolutions, pageUrls, directory) {
         }
     } else {
         if (typeof pageUrls == "string") {
-            screenshotMaker.makeScreenshot(resolutions, pageUrls, directory);
+            var resolutionsMap = new Map(Object.entries(resolutions));
+            resolutionsMap.forEach(resolution => {
+                screenshotMaker.makeScreenshot(resolution.width, pageUrls, directory);
+            });
         } else {
             var resolutionsMap = new Map(Object.entries(resolutions));
             resolutionsMap.forEach(resolution => {

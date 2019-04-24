@@ -11,7 +11,7 @@
 2. Набор web-адресов;
 3. Набор директорий для сохранения скриншотов (по умолчанию папка screenshots создастся внутри проекта).
 
-Приложение имеет две команды: screenshot(https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#screenshot) и test.
+Приложение имеет две команды: [screenshot](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#screenshot) и test.
 
 ## screenshot
 Для запуска команды screenshot необходимо из папки проекта в командной строке прописать:

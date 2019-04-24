@@ -9,6 +9,7 @@ const imageMatcher = require("./image-matcher");
 const config = require('./config');
 const addresses = config.addresses;
 const resolutions = config.resolutions;
+const directories = config.directories;
 
 yargs
     .usage('Usage: $0 <command> [options]')

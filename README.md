@@ -18,7 +18,9 @@
 
     npm start screenshot
 
-Команда screenshot имеет три входных атрибута: разрешение страницы ([size](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#size)), адрес web-страницы ([url](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#url)) и директорию ([dir](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#dir)), в которую сохраняются файлы. Перед началом задания входных атрибутов необходимо прописать "--". Если параметр не указан, то делается скриншот по каждому из значений, указанных в config.js. Для задания нескольких значений в один атрибут необходимо перечислить их через запятую без пробелов.
+Команда screenshot имеет три входных атрибута: разрешение страницы ([size](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#size)), адрес web-страницы ([url](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#url)) и директорию ([dir](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#dir)), в которую сохраняются файлы. Если параметр не указан, то делается скриншот по каждому из значений, указанных в config.js. Для задания нескольких значений в один атрибут необходимо перечислить их через запятую без пробелов.
+
+**Перед началом задания входных атрибутов необходимо прописать "--".**
 
 Также данную команду можно запускать короче: sc или s.
 

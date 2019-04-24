@@ -5,67 +5,56 @@ const config = require('./config');
 const resolutions = config.resolutions;
 const addresses = config.addresses;
 
+const tools = require('./tools.js');
+
 async function makeScreenshots(size, url, directory) {
 
-    var sizeArray = getSizeArray(size);
-    var urlArray = getUrlArray(url);
+    var sizeArray = tools.getArray(size);
+    var urlArray = tools.getArray(url);
 
+    var numOfScreenshots = 0;
+
+    sizeLoop:
     for (i in sizeArray) {
+
+        addressLoop:
         for (j in urlArray)  {
 
-            var resolution, path;
+            var resolution, address;
 
             if (isNaN(sizeArray[i]))    {
-                resolution = resolutions[sizeArray[i]].width;
+                var resolutionBuffer = resolutions[sizeArray[i]];
+
+                if (resolutionBuffer === undefined || resolutionBuffer === null) {
+                    console.log("Resolution \"" + sizeArray[i] + "\" is not found");
+                    continue sizeLoop;
+                }
+                resolution = resolutionBuffer.width;
             } else {
                 resolution = parseInt(sizeArray[i], 10);
             }
 
             if (urlArray[j].startsWith("http"))    {
-                path = urlArray[j];
+                address = urlArray[j];
             } else {
-                path = addresses[urlArray[j]].address;
+
+                var pathBuffer = addresses[urlArray[j]];
+
+                if (pathBuffer === undefined || pathBuffer === null) {
+                    console.log("Address \"" + urlArray[j] + "\" is not found");
+                    continue addressLoop;
+                }
+                address = pathBuffer.address;
             }
 
-            makeScreenshot(resolution, path, directory);
+            makeScreenshot(resolution, address, directory);
+            numOfScreenshots++;
         }
     }
 
-}
-
-function getSizeArray (variable) {
-
-    var sizeArray = [];
-    if (typeof variable == "object") {
-
-        var bufArray = Array.from(Object.entries(variable));
-
-        for (i in bufArray) {
-            sizeArray.push(bufArray[i][0]);
-        }
-    } else {
-        sizeArray = variable.split(",");
+    if (numOfScreenshots > 0) {
+        console.log("Creating " + numOfScreenshots + " screenshot(s) in " + directory + " directory");
     }
-
-    return sizeArray;
-}
-
-function getUrlArray (variable) {
-
-    var urlArray = [];
-    if (typeof variable == "object") {
-
-        var bufArray = Array.from(new Map(Object.entries(variable)));
-
-        for (i in bufArray) {
-            urlArray.push(bufArray[i][0])
-        }
-
-    } else {
-        urlArray = variable.split(",");
-    }
-
-    return urlArray;
 }
 
 async function makeScreenshot(size, url, directory) {
@@ -74,20 +63,14 @@ async function makeScreenshot(size, url, directory) {
 
     var fileName = url.toString().replace(/[\/\:]/g, '').concat('-screenshot-', size, '.png');
     let browser, page;
-    checkForDirectory(savePath);
+    tools.checkForDirectory(savePath);
     browser = await puppeteer.launch({args: ["--proxy-server='direct://'", '--proxy-bypass-list=*']});
     page = await browser.newPage();
     page.setViewport({width: size, height: 600});
     await page.goto(url);
     await page.screenshot({path: savePath.concat(path.sep, fileName), fullPage: true});
-    browser.close()
+    browser.close();
     return fileName;
-}
-
-function checkForDirectory(directory) {
-
-    if (!fs.existsSync(directory)) fs.mkdirSync(directory);
-
 }
 
 module.exports.makeScreenshots = makeScreenshots;

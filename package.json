@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "mocha src/screen-matcher",
-    "start": "node src/frontend-screen-matcher"
+    "start": "node src/app"
   },
   "repository": {
     "type": "git",

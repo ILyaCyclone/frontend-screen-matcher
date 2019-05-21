@@ -23,5 +23,24 @@ function checkForDirectory(directory, numberOfResolutions) {
 
 }
 
+function exist(fileName) {
+
+    if (fs.existsSync(fileName))
+        return true;
+    else
+        return false;
+
+}
+
+function isUndefinedOrNull(object) {
+    if (object === undefined || object === null) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 module.exports.getArray = getArray;
 module.exports.checkForDirectory = checkForDirectory;
+module.exports.exist = exist;
+module.exports.isUndefinedOrNull = isUndefinedOrNull;

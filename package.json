@@ -2,12 +2,7 @@
   "name": "frontend-screen-matcher",
   "version": "0.1.0",
 
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
   "scripts": {
-    "test": "mocha src/screen-matcher",
     "start": "node src/app"
   },
   "repository": {
@@ -21,9 +16,9 @@
   },
   "homepage": "https://github.com/Adusya/change-detector#readme",
   "description": "frontend-screen-matcher project",
-
   "dependencies": {
     "chai": "^4.1.2",
+    "looks-same": "^7.2.0",
     "mocha": "^5.0.0",
     "pixelmatch": "^4.0.2",
     "pngjs": "^3.4.0",

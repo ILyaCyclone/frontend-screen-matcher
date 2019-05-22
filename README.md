@@ -18,7 +18,7 @@
 
     npm start screenshot
 
-Команда screenshot имеет четыре входных атрибута: разрешение страницы ([size](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#size)), адрес web-страницы ([url](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#url)), директорию ([dir](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#dir)), в которую сохраняются файлы и fn ([имя файла](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#fn)), который будет сохранен. Если параметр не указан, то делается скриншот по каждому из значений, указанных в config.js. Для задания нескольких значений в один атрибут необходимо перечислить их через запятую без пробелов.
+Команда screenshot имеет четыре входных атрибута: разрешение страницы ([size](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#size)), адрес web-страницы ([url](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#url)), директорию ([dir](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#dir)), в которую сохраняются файлы и имя файла ([fn](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#fn)), который будет сохранен. Если параметр не указан, то делается скриншот по каждому из значений, указанных в config.js. Для задания нескольких значений в один атрибут необходимо перечислить их через запятую без пробелов.
 
 **Перед началом задания входных атрибутов необходимо прописать "--".**
 

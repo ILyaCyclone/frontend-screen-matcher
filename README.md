@@ -64,7 +64,7 @@
 
 
 ## test
-Команда test имеет два входных параметра: разрешение страницы ([size](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#size)) и адрес web-страницы ([имя файла](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#fn)). Работа с параметрами осуществляется также, как и в команде screenshot. Для запуска теста необходимо создать скриншоты и в golden и в test директориях. 
+Команда test имеет два входных параметра: разрешение страницы ([size](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#size)) и имя файла ([fn](https://github.com/Adusya/frontend-screen-matcher/blob/master/README.md#fn)). Работа с параметрами осуществляется также, как и в команде screenshot. Для запуска теста необходимо создать скриншоты и в golden и в test директориях. 
 
 Примеры:
 

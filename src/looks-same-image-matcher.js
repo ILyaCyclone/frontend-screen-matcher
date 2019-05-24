@@ -80,7 +80,7 @@ function compare(fileName, bounds) {
 
         var sameBounds;
         if (tools.isUndefinedOrNull(bounds)) {
-            sameBounds = true;
+            sameBounds = equals;
         } else {
             sameBounds = checkDiffBounds(bounds, diffBounds);
         }

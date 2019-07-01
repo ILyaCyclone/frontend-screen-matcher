@@ -31,6 +31,8 @@ const resolutions = {
     }
 };
 
+const baseUrl = "https://rut-miit.ru";
+
 const addresses = {
     "hp": {
         description : "home page",
@@ -43,14 +45,21 @@ const addresses = {
             "xl": { left: 0, top: 156, right: 1201, bottom: 705 },
         }
     },
-    "news": {
-        description : "news page",
-        address: "https://rut-miit.ru/page/1311"
-    },
-    "plan": {
-        description : "plan page",
-        address: "http://deasigndemo.com/rtu/applicants_index.html?year=2010&city=1&level=5&training=20773"
-    }
+    "main": {address: baseUrl+"/"},
+    "news": {address: baseUrl+"/news"},
+    "newsItemWithWideImage": {address: baseUrl+"/news/159935"},
+    "newsItemWithSmallImage": {address: baseUrl+"/news/162380"},
+    "newsItemWithoutImage": {address: baseUrl+"/news/159825"},
+    "articleWithSideMenu_svedenEducation": {address: baseUrl+"/sveden/education"},
+    "articleWithoutSideMenu_sveden": {address: baseUrl+"/sveden"},
+    "depts": {address: baseUrl+"/depts"},
+    "dept": {address: baseUrl+"/depts/294"},
+    "timetable": {address: baseUrl+"/timetable"},
+    "people": {address: baseUrl+"/people"},
+    "profile_17": {address: baseUrl+"/people/17"},
+    "articleWithList_lectures": {address: baseUrl+"/org/projects/lectures"},
+    "admissionsPrograms": {address: baseUrl+"/admissions/programs"},
+    "feedback": {address: baseUrl+"/feedback"}
 };
 
 const directories = {

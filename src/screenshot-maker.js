@@ -72,7 +72,11 @@ async function makeScreenshots(size, url, directory, fn) {
                 fileName = urlArray[j] + "-" + screenResolution;
             }
 
-            makeScreenshot(screenResolution, address, directory, fileName);
+            if (numOfScreenshots % 5 == 0) {
+                await makeScreenshot(screenResolution, address, directory, fileName);
+            } else {
+                makeScreenshot(screenResolution, address, directory, fileName);
+            }
             numOfScreenshots++;
         }
     }

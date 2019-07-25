@@ -2,7 +2,7 @@ const resolutions = {
     "xs": {
         infix: "xs",
         description : "mobile 1 column",
-        width: 575,
+        width: 400,
         diffCluster: { left: 0, top: 69, right: 574, bottom: 468 }
     },
     "sm": {
@@ -34,9 +34,9 @@ const resolutions = {
 const baseUrl = "https://rut-miit.ru";
 
 const addresses = {
-    "hp": {
+    "main": {
         description : "home page",
-        address: "https://rut-miit.ru",
+        address: baseUrl,
         bounds: {
             "xs": { left: 0, top: 69, right: 574, bottom: 468 },
             "sm": { left: 0, top: 69, right: 671, bottom: 468 },
@@ -45,10 +45,10 @@ const addresses = {
             "xl": { left: 0, top: 156, right: 1201, bottom: 705 },
         }
     },
-    "main": {address: baseUrl+"/"},
     "news": {address: baseUrl+"/news"},
     "newsItemWithWideImage": {address: baseUrl+"/news/159935"},
     "newsItemWithSmallImage": {address: baseUrl+"/news/162380"},
+    /*
     "newsItemWithoutImage": {address: baseUrl+"/news/159825"},
     "articleWithSideMenu_svedenEducation": {address: baseUrl+"/sveden/education"},
     "articleWithoutSideMenu_sveden": {address: baseUrl+"/sveden"},
@@ -58,8 +58,9 @@ const addresses = {
     "people": {address: baseUrl+"/people"},
     "profile_17": {address: baseUrl+"/people/17"},
     "articleWithList_lectures": {address: baseUrl+"/org/projects/lectures"},
-    "admissionsPrograms": {address: baseUrl+"/admissions/programs"},
+    "admissionsDegrees": {address: baseUrl+"/admissions/degrees"},
     "feedback": {address: baseUrl+"/feedback"}
+    */
 };
 
 const directories = {

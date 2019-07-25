@@ -4,13 +4,62 @@ const fs = require("fs");
 const config = require('./config');
 const resolutions = config.resolutions;
 const addresses = config.addresses;
+const rimraf = require("rimraf");
+
+
+const winston = require("winston");
+const logger = winston.createLogger({
+    level: 'debug',
+    // transports: [
+    //   new winston.transports.Console()
+    //  new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    // //   new winston.transports.File({ filename: 'combined.log' })
+    // ]
+  });
+  if (process.env.NODE_ENV !== 'production') {
+    logger.add(new winston.transports.Console({
+      format: winston.format.simple()
+    }));
+  }
+
+ 
+  const pLimit = require('p-limit')(10);
+
+  
+
 
 const tools = require('./tools.js');
 
-async function makeScreenshots(size, url, directory, fn) {
+async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn) {
+    //rimraf.sync(`screenshots/${directory}/**`);
 
-    var sizeArray = tools.getArray(size);
-    var urlArray = tools.getArray(url);
+    // const makeScreenshotPromises = 
+    Object.entries(resolutionsConfig).map(([resolutionKey, resolution]) =>
+        Object.entries(addressesConfig).map(([addressKey, address]) => {
+            const width = resolution.width;
+            const url = address.address;
+            const filename = `${addressKey}_${width}`;
+
+            return pLimit(() => makeScreenshot(width, url, directory, filename)
+                                .catch(rejectReason => logger.error(rejectReason))
+                );
+            // return makeScreenshotAwaiting(width, url, directory, filename);
+        })
+    );
+
+    // Promise.all(makeScreenshotPromises);
+    // console.log("Finished making "+makeScreenshotPromises.length+" screenshots");
+}
+
+
+
+
+async function makeScreenshots_orig(size, url, directory, fn) {
+    const promiseScreenshots = new Array();
+
+    const sizeArray = tools.getArray(size);
+    const urlArray = tools.getArray(url);
+
 
 
     var fileNameArray;
@@ -72,32 +121,68 @@ async function makeScreenshots(size, url, directory, fn) {
                 fileName = urlArray[j] + "-" + screenResolution;
             }
 
-            if (numOfScreenshots % 5 == 0) {
-                await makeScreenshot(screenResolution, address, directory, fileName);
-            } else {
-                makeScreenshot(screenResolution, address, directory, fileName);
-            }
-            numOfScreenshots++;
+            // if (numOfScreenshots % 5 == 0) {
+            //     await makeScreenshot(screenResolution, address, directory, fileName);
+            // } else {
+            //     makeScreenshot(screenResolution, address, directory, fileName);
+            // }
+            // numOfScreenshots++;
+
+            promiseScreenshots.push(
+                pLimit(() => makeScreenshot(screenResolution, address, directory, fileName))
+            );
         }
     }
 
-    if (numOfScreenshots > 0) {
-        console.log("Creating " + numOfScreenshots + " screenshot(s) in " + directory + " directory");
-    }
+    const result = await Promise.all(promiseScreenshots);
+    // console.log(result);
+    console.llg("makeScreenshotEnters: "+makeScreenshotEnters);
+
+    // if (numOfScreenshots > 0) {
+    //     console.log("Creating " + numOfScreenshots + " screenshot(s) in " + directory + " directory");
+    // }
 }
 
 async function makeScreenshot(size, url, directory, fileName) {
+    //makeScreenshotEnters++;
+    // console.log(`making screenshot for ${url} of size ${size}...`);
+    logger.debug(`making screenshot for ${url} of size ${size}...`);
 
-    var savePath = config.directories[directory].path;
+    const savePath = config.directories[directory].path;
 
-    let browser, page;
+
+    return puppeteer.launch({args: ["--proxy-server='direct://'", '--proxy-bypass-list=*']})
+        .then(async browser => {
+            await browser.newPage()
+                .then(async page => {
+                    page.on("error", e => logger.error(e));
+                    await page.setViewport({width: size, height: 600}).catch(rejectReason => logger.error(rejectReason));
+                    await page.goto(url, {waitUntil: 'load', timeout: 0}).catch(rejectReason => logger.error(rejectReason));
+                    await page.screenshot({path: savePath.concat(path.sep, fileName, '.png'), fullPage: true})
+                        .then(() => logger.debug(`finish screenshot for ${url} of size ${size}.`))
+                        .catch(rejectReason => logger.error(rejectReason));
+                })
+                .catch(e => logger.error(e));
+            await browser.close();    
+        });
+
+
+}
+
+async function makeScreenshotAwaiting(size, url, directory, fileName) {
+    logger.debug(`making screenshot for ${url} of size ${size}`);
+
+    const savePath = config.directories[directory].path;
+
     tools.checkForDirectory(savePath);
-    browser = await puppeteer.launch({args: ["--proxy-server='direct://'", '--proxy-bypass-list=*']});
-    page = await browser.newPage();
-    page.setViewport({width: size, height: 600});
+    const browser = await puppeteer.launch({args: ["--proxy-server='direct://'", '--proxy-bypass-list=*']});
+    const page = await browser.newPage();
+    await page.setViewport({width: size, height: 600});
     await page.goto(url, {waitUntil: 'load', timeout: 0});
     await page.screenshot({path: savePath.concat(path.sep, fileName, '.png'), fullPage: true});
-    browser.close();
+    await browser.close();
+
+    logger.debug(`finish screenshot for ${url} of size ${size}`);
 }
 
 module.exports.makeScreenshots = makeScreenshots;

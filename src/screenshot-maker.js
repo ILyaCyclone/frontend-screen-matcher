@@ -9,7 +9,7 @@ const rimraf = require("rimraf");
 
 const winston = require("winston");
 const logger = winston.createLogger({
-    level: 'debug', // 'debug' 'info'
+    level: 'info', // 'debug' 'info'
     // transports: [
     //   new winston.transports.Console()
     //  new winston.transports.File({ filename: 'error.log', level: 'error' }),
@@ -22,7 +22,7 @@ if (process.env.NODE_ENV !== 'production') {
     }));
 }
 
-const concurrency = 10;
+const concurrency = 5;
 const pLimit = require('p-limit')(concurrency);
 
 
@@ -30,14 +30,18 @@ const pLimit = require('p-limit')(concurrency);
 
 const tools = require('./tools.js');
 
-async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn) {
-    const neededScreenshotCount = Object.keys(resolutionsConfig).length * Object.keys(addressesConfig).length;
-    let madeScreenshotCount = 0;
-    logger.info(`Started making ${neededScreenshotCount} screenshots...`);
-    const makeScreenshotsStartMillis = new Date().getTime();
-    
-    //rimraf.sync(`screenshots/${directory}/**`);
+async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn, shouldClearFolder) {
+    if(shouldClearFolder === "true") {
+        clearFolder(directory);
+    }
 
+    const makeScreenshotsStartMillis = new Date().getTime();
+    const neededPageCount = Object.keys(addressesConfig).length;
+    const neededScreenshotCount = neededPageCount * Object.keys(resolutionsConfig).length;
+    let finishedPageCount = 0;
+    let madeScreenshotCount = 0;
+
+    logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages...`);
     await Promise.all(
         Object.entries(addressesConfig).map(async ([addressKey, address]) =>
             pLimit(() =>
@@ -46,8 +50,9 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
 
                 const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
                 try {
-                    const page = await browser.newPage();
-                    await page.goto(url, { waitUntil: 'load', timeout: 0 });
+                    const page = await createPage(browser, address);
+                    
+                    await page.goto(url, { waitUntil: 'load' });
 
                     for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
                         const width = resolution.width;
@@ -63,19 +68,24 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
 
                         logger.debug(`finish screenshot for ${url} of width ${width}`);
                     }
+                    
+                    finishedPageCount++;
+                    logger.info(`finished ${url} (${finishedPageCount}/${neededPageCount})`)
                     resolve();
                 } catch (e) {
                     const msg = `failed making screenshot for ${url}: ${e}`;
-                    logger.error(msg);
+                    //logger.error(msg);
                     reject(msg);
                 } finally {
-                    browser.close()
-                        .then(logger.debug(`browser closed for ${url}`));
+                    browser.close();
                 }
             })
             )
         )
-    );
+    )
+    .catch(rejected => {
+        logger.error(rejected);
+    });
 
     const makeScreenshotsEndMillis = new Date().getTime();
     const makeScreenshotsElapsedMillis = makeScreenshotsEndMillis - makeScreenshotsStartMillis;
@@ -83,6 +93,32 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
 }
 
 
+function clearFolder(directory) {
+    rimraf.sync(`screenshots/${directory}/*`);
+    logger.debug(`cleared folder ${directory}`);
+}
+
+
+async function createPage(browser, addressObject) {
+    const page = await browser.newPage();
+    //page.setDefaultTimeout(15 * 1000);
+    await page.setCacheEnabled(false);
+    await setPageWaits(page, addressObject.waits);
+    return page;
+}
+
+
+function setPageWaits(page, waits) {
+    if(waits) {
+        for(wait of waits) {
+            if(wait.type === "css") {
+                // works across navigations
+                page.waitForSelector(wait.selector) // wait.options could be added as second parameter
+                    .catch(e => logger.error(`failed to wait for ${wait.selector}: ${e}`));
+            }
+        }
+    }
+}
 
 
 

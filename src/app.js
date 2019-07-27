@@ -13,7 +13,9 @@ const directories = config.directories;
 
 yargs
     .usage('Usage: $0 <command> [options]')
-    .command(['screenshot [size] [url] [dir] [fn]', 's', 'sc'], 'make a screenshot', (yargs) => {
+
+
+    .command(['screenshot [size] [url] [dir] [fn] [clear]', 's', 'sc'], 'make screenshots', (yargs) => {
         yargs
             .positional('size', {
                 describe: 'size of screen',
@@ -28,10 +30,17 @@ yargs
             alias: 'd',
             default: "test"
         })
+            .option('clear', {
+                describe: "clear target folder",
+                default: false
+        })
             .option('fn')
     }, (argv) => {
-        screenshotMaker.makeScreenshots(argv.size, argv.url, argv.dir, argv.fn);
-    }).command(['test [size] [fn]','t'], 'start a test', (yargs) => {
+        screenshotMaker.makeScreenshots(argv.size, argv.url, argv.dir, argv.fn, argv.clear);
+    })
+    
+
+    .command(['test [size] [fn]','t'], 'start a test', (yargs) => {
     yargs
         .positional('size', {
             describe: 'size of screen',

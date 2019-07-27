@@ -45,7 +45,9 @@ const addresses = {
             "xl": { left: 0, top: 156, right: 1201, bottom: 705 },
         }
     },
-    "news": {address: baseUrl+"/news"},
+    "news": {address: baseUrl+"/news"
+        , waits: [{type: "css", selector: ".article-list .article__preview"}]
+    },
     "newsItemWithWideImage": {address: baseUrl+"/news/159935"},
     "newsItemWithSmallImage": {address: baseUrl+"/news/162380"},
     "newsItemWithoutImage": {address: baseUrl+"/news/159825"},
@@ -57,7 +59,9 @@ const addresses = {
     "people": {address: baseUrl+"/people"},
     "profile_17": {address: baseUrl+"/people/17"},
     "articleWithList_lectures": {address: baseUrl+"/org/projects/lectures"},
-    "admissionsDegrees": {address: baseUrl+"/admissions/degrees"},
+    "admissionsDegrees": {address: baseUrl+"/admissions/degrees"
+        , waits: [{type: "css", selector: ".applicants_specialization .applicants__places"}]
+    },
     "feedback": {address: baseUrl+"/feedback"}
 };
 

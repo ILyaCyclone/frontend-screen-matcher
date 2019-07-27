@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const path = require("path");
+const fs = require("fs");
 const rimraf = require("rimraf");
 
 const tools = require('./tools.js');
@@ -10,7 +11,7 @@ const addresses = config.addresses;
 
 const winston = require("winston");
 const logger = winston.createLogger({
-    level: 'info', // 'debug' 'info'
+    level: 'debug', // 'debug' 'info'
     // transports: [
     //   new winston.transports.Console()
     //  new winston.transports.File({ filename: 'error.log', level: 'error' }),
@@ -30,7 +31,7 @@ const pLimit = require('p-limit')(concurrency);
 
 
 async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn, shouldClearFolder) {
-    if(shouldClearFolder === "true") {
+    if (shouldClearFolder === "true") {
         clearFolder(directory);
     }
 
@@ -44,47 +45,56 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     await Promise.all(
         Object.entries(addressesConfig).map(async ([addressKey, address]) =>
             pLimit(() =>
-            new Promise(async (resolve, reject) => {   
-                const url = address.address;
+                new Promise(async (resolve, reject) => {
+                    const url = address.address;
 
-                const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
-                try {
-                    const page = await createPage(browser, address);
-                    
-                    await page.goto(url, { waitUntil: 'load' });
+                    const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
+                    try {
+                        const page = await createPage(browser, address);
 
-                    for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
-                        const width = resolution.width;
-                        const filename = `${addressKey}_${width}`;
-                        const savePath = config.directories[directory].path;
+                        await page.goto(url, { waitUntil: 'load' });
 
-                        logger.debug(`making screenshot for ${url} of width ${width}...`);
+                        const ignoredObject = new Object();
+                        for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
+                            const width = resolution.width;
+                            const filename = `${addressKey}_${width}`;
+                            const savePath = config.directories[directory].path;
 
-                        await page.setViewport({ width: width, height: 600 });
+                            logger.debug(`making screenshot for ${url} of width ${width}...`);
 
-                        await page.screenshot({ path: savePath.concat(path.sep, filename, '.png'), fullPage: true });
-                        madeScreenshotCount++;
+                            await page.setViewport({ width: width, height: 600 });
 
-                        logger.debug(`finish screenshot for ${url} of width ${width}`);
+                            await page.screenshot({ path: savePath.concat(path.sep, filename, '.png'), fullPage: true });
+                            madeScreenshotCount++;
+
+                            const ignoredElements = await getIgnoredElements(page, address);
+                            if (ignoredElements != null && ignoredElements.length > 0) {
+                                ignoredObject[width] = ignoredElements;
+                            }
+
+                            logger.debug(`finish screenshot for ${url} of width ${width}`);
+                        }
+
+                        savePageMeta(directory, addressKey, ignoredObject);
+
+                        finishedPageCount++;
+                        logger.info(`finished ${url} (${finishedPageCount}/${neededPageCount})`)
+                        resolve();
+                    } catch (e) {
+                        const msg = `failed making screenshot for ${url}: ${e}`;
+                        // logger.error(msg);
+                        reject(msg);
+                    } finally {
+                        browser.close();
                     }
-                    
-                    finishedPageCount++;
-                    logger.info(`finished ${url} (${finishedPageCount}/${neededPageCount})`)
-                    resolve();
-                } catch (e) {
-                    const msg = `failed making screenshot for ${url}: ${e}`;
-                    //logger.error(msg);
-                    reject(msg);
-                } finally {
-                    browser.close();
-                }
-            })
+                })
             )
         )
     )
-    .catch(rejected => {
-        logger.error(rejected);
-    });
+        .catch(rejected => {
+            logger.error(rejected);
+        })
+        ;
 
     const makeScreenshotsEndMillis = new Date().getTime();
     const makeScreenshotsElapsedMillis = makeScreenshotsEndMillis - makeScreenshotsStartMillis;
@@ -108,9 +118,9 @@ async function createPage(browser, addressObject) {
 
 
 function setPageWaits(page, waits) {
-    if(waits) {
-        for(wait of waits) {
-            if(wait.type === "css") {
+    if (waits) {
+        for (wait of waits) {
+            if (wait.type === "css") {
                 // works across navigations
                 page.waitForSelector(wait.selector) // wait.options could be added as second parameter
                     .catch(e => logger.error(`failed to wait for ${wait.selector}: ${e}`));
@@ -121,9 +131,40 @@ function setPageWaits(page, waits) {
 
 
 
+async function getIgnoredElements(page, address) {
+    if (address.ignores) {
+        const ignoredElements = new Array();
+        for (const ignore of address.ignores) {
+            switch (ignore.type) {
+                case "css":
+                    const element = await page.$(ignore.selector);
+                    if (element != null) {
+                        const rect = await element.boundingBox(); // {x, y, width, height}
+                        ignoredElements.push({
+                            "selector": ignore.selector, "top": Math.floor(rect.y), "left": Math.floor(rect.x)
+                            , "bottom": Math.ceil(rect.y + rect.height), "right": Math.ceil(rect.x + rect.width)
+                        });
+                    }
+                    break;
+                default:
+                    logger.error("Unsupported ignored type: " + ignore.type);
+            }
+        }
+        return ignoredElements;
+    }
+    return null;
+}
 
 
 
+function savePageMeta(directory, addressKey, ignoredObject) {
+    if (Object.keys(ignoredObject).length > 0) {
+        const pageMetaFileName = config.directories[directory].path.concat(path.sep, addressKey, '.json');
+        const pageMetaObject = { "ignores": ignoredObject };
+        const pageMetaFileContent = JSON.stringify(pageMetaObject, null, 2); // prettify
+        fs.writeFileSync(pageMetaFileName, pageMetaFileContent);
+    }
+}
 
 
 
@@ -155,11 +196,11 @@ async function makeScreenshots_original(size, url, directory, fn) {
         numberOfUnknownUrls = 0;
 
         addressLoop:
-        for (j in urlArray)  {
+        for (j in urlArray) {
 
             var screenResolution, address;
 
-            if (isNaN(sizeArray[i]))    {
+            if (isNaN(sizeArray[i])) {
                 var resolutionBuffer = resolutions[sizeArray[i]];
 
                 if (tools.isUndefinedOrNull(resolutionBuffer)) {
@@ -171,10 +212,10 @@ async function makeScreenshots_original(size, url, directory, fn) {
                 screenResolution = parseInt(sizeArray[i], 10);
             }
 
-            if (urlArray[j].startsWith("http"))    {
+            if (urlArray[j].startsWith("http")) {
                 address = urlArray[j];
 
-                if(numberOfUnknownUrls >= numberOfFileNames) {
+                if (numberOfUnknownUrls >= numberOfFileNames) {
                     console.log("please, set fileName (--fn) argument for url " + address + ". Screenshot won't be created for this url");
                     continue addressLoop;
                 }
@@ -212,11 +253,11 @@ async function makeScreenshot(size, url, directory, fileName) {
 
     let browser, page;
     tools.checkForDirectory(savePath);
-    browser = await puppeteer.launch({args: ["--proxy-server='direct://'", '--proxy-bypass-list=*']});
+    browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
     page = await browser.newPage();
-    page.setViewport({width: size, height: 600});
-    await page.goto(url, {waitUntil: 'load', timeout: 0});
-    await page.screenshot({path: savePath.concat(path.sep, fileName, '.png'), fullPage: true});
+    page.setViewport({ width: size, height: 600 });
+    await page.goto(url, { waitUntil: 'load', timeout: 0 });
+    await page.screenshot({ path: savePath.concat(path.sep, fileName, '.png'), fullPage: true });
     browser.close();
 }
 

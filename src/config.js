@@ -48,7 +48,6 @@ const addresses = {
     "news": {address: baseUrl+"/news"},
     "newsItemWithWideImage": {address: baseUrl+"/news/159935"},
     "newsItemWithSmallImage": {address: baseUrl+"/news/162380"},
-    /*
     "newsItemWithoutImage": {address: baseUrl+"/news/159825"},
     "articleWithSideMenu_svedenEducation": {address: baseUrl+"/sveden/education"},
     "articleWithoutSideMenu_sveden": {address: baseUrl+"/sveden"},
@@ -60,7 +59,6 @@ const addresses = {
     "articleWithList_lectures": {address: baseUrl+"/org/projects/lectures"},
     "admissionsDegrees": {address: baseUrl+"/admissions/degrees"},
     "feedback": {address: baseUrl+"/feedback"}
-    */
 };
 
 const directories = {

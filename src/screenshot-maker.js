@@ -9,7 +9,7 @@ const rimraf = require("rimraf");
 
 const winston = require("winston");
 const logger = winston.createLogger({
-    level: 'debug',
+    level: 'debug', // 'debug' 'info'
     // transports: [
     //   new winston.transports.Console()
     //  new winston.transports.File({ filename: 'error.log', level: 'error' }),
@@ -22,8 +22,8 @@ if (process.env.NODE_ENV !== 'production') {
     }));
 }
 
-
-const pLimit = require('p-limit')(5);
+const concurrency = 10;
+const pLimit = require('p-limit')(concurrency);
 
 
 
@@ -31,54 +31,63 @@ const pLimit = require('p-limit')(5);
 const tools = require('./tools.js');
 
 async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn) {
-    logger.debug("entered makeScreenshots")
+    const neededScreenshotCount = Object.keys(resolutionsConfig).length * Object.keys(addressesConfig).length;
+    let madeScreenshotCount = 0;
+    logger.info(`Started making ${neededScreenshotCount} screenshots...`);
+    const makeScreenshotsStartMillis = new Date().getTime();
+    
     //rimraf.sync(`screenshots/${directory}/**`);
 
-    // const makeScreenshotPromises = 
-    Object.entries(addressesConfig).forEach(async ([addressKey, address]) => {
-        // for ([addressKey, address] of Object.entries(addressesConfig)) {      
-        const url = address.address;
+    await Promise.all(
+        Object.entries(addressesConfig).map(async ([addressKey, address]) =>
+            pLimit(() =>
+            new Promise(async (resolve, reject) => {   
+                const url = address.address;
 
-        const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
-        try {
-            const page = await browser.newPage();
-            await page.goto(url, { waitUntil: 'load', timeout: 0 });
+                const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
+                try {
+                    const page = await browser.newPage();
+                    await page.goto(url, { waitUntil: 'load', timeout: 0 });
 
-            // Object.entries(resolutionsConfig).forEach(async ([resolutionKey, resolution]) => {
-            for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {    
-                const width = resolution.width;
-                const filename = `${addressKey}_${width}`;
-                const savePath = config.directories[directory].path;
+                    for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
+                        const width = resolution.width;
+                        const filename = `${addressKey}_${width}`;
+                        const savePath = config.directories[directory].path;
 
-                logger.debug(`making screenshot for ${url} of width ${width}...`);
+                        logger.debug(`making screenshot for ${url} of width ${width}...`);
 
-                await page.setViewport({ width: width, height: 600 });
+                        await page.setViewport({ width: width, height: 600 });
 
-                // pLimit(() => page.screenshot({path: savePath.concat(path.sep, filename, '.png'), fullPage: true})
-                //     .then(() => logger.debug(`finish screenshot for ${url} of width ${width}`))
-                //     .catch(rejectReason => logger.error(rejectReason)));
-                await page.screenshot({ path: savePath.concat(path.sep, filename, '.png'), fullPage: true });
-                // .then(() => logger.debug(`finish screenshot for ${url} of width ${width}`))
-                // .catch(rejectReason => logger.error(rejectReason));
-                logger.debug(`finish screenshot for ${url} of width ${width}`);
+                        await page.screenshot({ path: savePath.concat(path.sep, filename, '.png'), fullPage: true });
+                        madeScreenshotCount++;
 
-                //return 
-                // pLimit(() => makeScreenshot(width, url, directory, filename)
-                // .catch(rejectReason => logger.error(rejectReason))
-                // );
-                // return makeScreenshotAwaiting(width, url, directory, filename);
-            }
-            //);
-        } finally {
-            await browser.close();
-            logger.debug(`browser closed for ${url}`);
-        }
-    }
+                        logger.debug(`finish screenshot for ${url} of width ${width}`);
+                    }
+                    resolve();
+                } catch (e) {
+                    const msg = `failed making screenshot for ${url}: ${e}`;
+                    logger.error(msg);
+                    reject(msg);
+                } finally {
+                    browser.close()
+                        .then(logger.debug(`browser closed for ${url}`));
+                }
+            })
+            )
+        )
     );
 
-    // await Promise.all(makeScreenshotPromises);
-    // console.log("Finished making "+makeScreenshotPromises.length+" screenshots");
+    const makeScreenshotsEndMillis = new Date().getTime();
+    const makeScreenshotsElapsedMillis = makeScreenshotsEndMillis - makeScreenshotsStartMillis;
+    logger.info(`Finished making ${madeScreenshotCount} screenshots in ${(makeScreenshotsElapsedMillis / 1000).toFixed(1)} seconds.`);
 }
+
+
+
+
+
+
+
 
 
 

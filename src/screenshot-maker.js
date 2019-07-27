@@ -31,7 +31,7 @@ const pLimit = require('p-limit')(concurrency);
 const tools = require('./tools.js');
 
 async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn, shouldClearFolder) {
-    if(shouldClearFolder === "true") {
+    if (shouldClearFolder === "true") {
         clearFolder(directory);
     }
 
@@ -42,50 +42,53 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     let madeScreenshotCount = 0;
 
     logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages...`);
-    await Promise.all(
-        Object.entries(addressesConfig).map(async ([addressKey, address]) =>
-            pLimit(() =>
-            new Promise(async (resolve, reject) => {   
-                const url = address.address;
 
-                const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
-                try {
-                    const page = await createPage(browser, address);
-                    
-                    await page.goto(url, { waitUntil: 'load' });
+    const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
+    try {
+        await Promise.all(
+            Object.entries(addressesConfig).map(async ([addressKey, address]) =>
+                pLimit(() =>
+                    new Promise(async (resolve, reject) => {
+                        try {
+                            const page = await createPage(browser, address);
+                            const url = address.address;
 
-                    for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
-                        const width = resolution.width;
-                        const filename = `${addressKey}_${width}`;
-                        const savePath = config.directories[directory].path;
+                            await page.goto(url, { waitUntil: 'load' });
 
-                        logger.debug(`making screenshot for ${url} of width ${width}...`);
+                            for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
+                                const width = resolution.width;
+                                const filename = `${addressKey}_${width}`;
+                                const savePath = config.directories[directory].path;
 
-                        await page.setViewport({ width: width, height: 600 });
+                                logger.debug(`making screenshot for ${url} of width ${width}...`);
 
-                        await page.screenshot({ path: savePath.concat(path.sep, filename, '.png'), fullPage: true });
-                        madeScreenshotCount++;
+                                await page.setViewport({ width: width, height: 600 });
 
-                        logger.debug(`finish screenshot for ${url} of width ${width}`);
-                    }
-                    
-                    finishedPageCount++;
-                    logger.info(`finished ${url} (${finishedPageCount}/${neededPageCount})`)
-                    resolve();
-                } catch (e) {
-                    const msg = `failed making screenshot for ${url}: ${e}`;
-                    //logger.error(msg);
-                    reject(msg);
-                } finally {
-                    browser.close();
-                }
-            })
+                                await page.screenshot({ path: savePath.concat(path.sep, filename, '.png'), fullPage: true });
+                                madeScreenshotCount++;
+
+                                logger.debug(`finish screenshot for ${url} of width ${width}`);
+                            }
+
+                            finishedPageCount++;
+                            logger.info(`finished ${url} (${finishedPageCount}/${neededPageCount})`)
+                            resolve();
+                        } catch (e) {
+                            const msg = `failed making screenshot for ${url}: ${e}`;
+                            //logger.error(msg);
+                            reject(msg);
+                        }
+                    })
+                )
             )
         )
-    )
-    .catch(rejected => {
-        logger.error(rejected);
-    });
+            .catch(rejected => {
+                logger.error(rejected);
+            });
+
+    } finally {
+        browser.close();
+    }
 
     const makeScreenshotsEndMillis = new Date().getTime();
     const makeScreenshotsElapsedMillis = makeScreenshotsEndMillis - makeScreenshotsStartMillis;
@@ -102,16 +105,16 @@ function clearFolder(directory) {
 async function createPage(browser, addressObject) {
     const page = await browser.newPage();
     //page.setDefaultTimeout(15 * 1000);
-    await page.setCacheEnabled(false);
+    //await page.setCacheEnabled(false);
     await setPageWaits(page, addressObject.waits);
     return page;
 }
 
 
 function setPageWaits(page, waits) {
-    if(waits) {
-        for(wait of waits) {
-            if(wait.type === "css") {
+    if (waits) {
+        for (wait of waits) {
+            if (wait.type === "css") {
                 // works across navigations
                 page.waitForSelector(wait.selector) // wait.options could be added as second parameter
                     .catch(e => logger.error(`failed to wait for ${wait.selector}: ${e}`));

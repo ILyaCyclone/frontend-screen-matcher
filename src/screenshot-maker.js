@@ -11,7 +11,7 @@ const addresses = config.addresses;
 
 const winston = require("winston");
 const logger = winston.createLogger({
-    level: 'debug', // 'debug' 'info'
+    level: 'info', // 'debug' 'info'
     // transports: [
     //   new winston.transports.Console()
     //  new winston.transports.File({ filename: 'error.log', level: 'error' }),
@@ -51,11 +51,13 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                     const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
                     try {
                         const page = await createPage(browser, address);
+                        const hasWaits = address.waits != null;
 
-                        await page.goto(url, { waitUntil: 'load' });
+                        await page.goto(url);
 
                         const ignoredObject = new Object();
                         for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
+                            const isFirstResolution = resolutionKey == Object.entries(resolutionsConfig)[0][0];
                             const width = resolution.width;
                             const filename = `${addressKey}_${width}`;
                             const savePath = config.directories[directory].path;
@@ -63,6 +65,9 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                             logger.debug(`making screenshot for ${url} of width ${width}...`);
 
                             await page.setViewport({ width: width, height: 600 });
+                            if (hasWaits && isFirstResolution) {
+                                await pageWaits(page, address.waits);
+                            }
 
                             await page.screenshot({ path: savePath.concat(path.sep, filename, '.png'), fullPage: true });
                             madeScreenshotCount++;
@@ -112,18 +117,35 @@ async function createPage(browser, addressObject) {
     const page = await browser.newPage();
     //page.setDefaultTimeout(15 * 1000);
     //await page.setCacheEnabled(false);
-    await setPageWaits(page, addressObject.waits);
+    // await setPageWaits(page, addressObject.waits);
     return page;
 }
 
 
-function setPageWaits(page, waits) {
+// function setPageWaits(page, waits) {
+//     if (waits) {
+//         for (wait of waits) {
+//             if (wait.type === "css") {
+//                 // works across navigations
+//                 console.log("wait for " + wait.selector);
+//                 page.waitForSelector(wait.selector) // wait.options could be added as second parameter
+//                     .catch(e => logger.error(`failed to wait for ${wait.selector}: ${e}`));
+//             }
+//         }
+//     }
+// }
+
+
+async function pageWaits(page, waits) {
     if (waits) {
         for (wait of waits) {
-            if (wait.type === "css") {
-                // works across navigations
-                page.waitForSelector(wait.selector) // wait.options could be added as second parameter
-                    .catch(e => logger.error(`failed to wait for ${wait.selector}: ${e}`));
+            switch (wait.type) {
+                case "css":
+                    await page.waitForSelector(wait.selector) // wait.options could be added as second parameter
+                        .catch(e => logger.error(`failed to wait for ${wait.selector}: ${e}`));
+                    break;
+                default:
+                    logger.error("Unsupported wait type: " + wait.type);
             }
         }
     }
@@ -137,13 +159,15 @@ async function getIgnoredElements(page, address) {
         for (const ignore of address.ignores) {
             switch (ignore.type) {
                 case "css":
-                    const element = await page.$(ignore.selector);
-                    if (element != null) {
-                        const rect = await element.boundingBox(); // {x, y, width, height}
-                        ignoredElements.push({
-                            "selector": ignore.selector, "top": Math.floor(rect.y), "left": Math.floor(rect.x)
-                            , "bottom": Math.ceil(rect.y + rect.height), "right": Math.ceil(rect.x + rect.width)
-                        });
+                    const elements = await page.$$(ignore.selector);
+                    if (elements.length > 0) {
+                        const coordinates = await Promise.all(elements.map(async element => await getElementCoordinates(element)));
+                        const ignoredElement = {
+                            "selector": ignore.selector,
+                            "description": ignore.description,
+                            coordinates
+                        };
+                        ignoredElements.push(ignoredElement);
                     }
                     break;
                 default:
@@ -155,6 +179,19 @@ async function getIgnoredElements(page, address) {
     return null;
 }
 
+/**
+ * @return {top, left, bottom, right} coordinates of ElementHandle
+ */
+async function getElementCoordinates(element) {
+    const rect = await element.boundingBox(); // {x, y, width, height}
+    //console.log(JSON.stringify(await element.boxModel()));
+    return {
+        "top": Math.floor(rect.y), "left": Math.floor(rect.x)
+        , "bottom": Math.ceil(rect.y + rect.height), "right": Math.ceil(rect.x + rect.width)
+    };
+}
+
+
 
 
 function savePageMeta(directory, addressKey, ignoredObject) {
@@ -165,6 +202,15 @@ function savePageMeta(directory, addressKey, ignoredObject) {
         fs.writeFileSync(pageMetaFileName, pageMetaFileContent);
     }
 }
+
+
+
+
+function sleep(millis) {
+    return new Promise(resolve => setTimeout(resolve, millis));
+}
+
+
 
 
 

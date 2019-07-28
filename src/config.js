@@ -1,15 +1,23 @@
 const resolutions = {
-    "375-iphone8": {
+    // "375-iphone8": {
+    //     description: "xs - mobile 1 column",
+    //     device: "iPhone 8"
+    // },
+    "375": {
         description: "xs - mobile 1 column",
-        device: "iPhone 8"
+        width: 375
     }, 
     "576": {
         description: "sm - mobile 2 column",
         width: 576
     },
-    "768-iPad": {
+    // "768-iPad": {
+    //     description: "md - tablet 3 column",
+    //     device: "iPad"
+    // },
+    "768": {
         description: "md - tablet 3 column",
-        device: "iPad"
+        width: 768
     },
     "992": {
         description: "lg - desktop 4 column",

@@ -7,6 +7,9 @@ function clearFolder(directory) {
     rimraf.sync(`screenshots/${directory}/*`);
 }
 
+function sleep(millis) {
+    return new Promise(resolve => setTimeout(resolve, millis));
+}
 
 
 
@@ -50,7 +53,9 @@ function isUndefinedOrNull(object) {
     }
 }
 
+
 module.exports.clearFolder = clearFolder;
+module.exports.sleep = sleep;
 module.exports.getArray = getArray;
 module.exports.checkForDirectory = checkForDirectory;
 module.exports.exist = exist;

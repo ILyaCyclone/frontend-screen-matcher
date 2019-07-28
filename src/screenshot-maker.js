@@ -42,7 +42,7 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     let finishedPageCount = 0;
     let madeScreenshotCount = 0;
 
-    logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages (about ${neededScreenshotCount * 3} seconds)...`);
+    logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages (3-5 seconds each screen)...`);
     await Promise.all(
         Object.entries(addressesConfig).map(async ([addressKey, address]) =>
             pLimit(() =>
@@ -58,15 +58,16 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
 
                         const ignoredObject = new Object();
                         for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
-                            const isFirstResolution = resolutionKey == Object.entries(resolutionsConfig)[0][0];
                             const filename = `${addressKey}_${resolutionKey}`;
                             const savePath = config.directories[directory].path;
 
                             logger.debug(`making screenshot for ${url} of ${resolutionKey}...`);
 
-                            await emulateDevice(page, resolution);
+                            await emulateDevice(browser, page, resolution);
 
-                            if (hasWaits && isFirstResolution) {
+                            if (hasWaits) {
+                                // possible optimization: call pageWaits only during first page resoltion walkthrough
+                                // but for stability leave it here, shouldn't take any noticable time on subsecuent resolutions
                                 await pageWaits(page, address.waits);
                             }
 
@@ -148,11 +149,11 @@ async function pageWaits(page, waits) {
 }
 
 
-async function emulateDevice(page, resolution) {
+async function emulateDevice(browser, page, resolution) {
     if (resolution.device != null) {
         await page.emulate(devices[resolution.device]);
     } else {
-        await page.emulate({ "viewport": { width: width, height: 600 }, "userAgent": await browser.userAgent() });
+        await page.emulate({ "viewport": { width: resolution.width, height: 600 }, "userAgent": await browser.userAgent() });
         //await page.setViewport({ width: width, height: 600 });
     }
 }
@@ -208,12 +209,6 @@ function savePageMeta(directory, addressKey, ignoredObject) {
     }
 }
 
-
-
-
-function sleep(millis) {
-    return new Promise(resolve => setTimeout(resolve, millis));
-}
 
 
 

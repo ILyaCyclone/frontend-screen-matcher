@@ -39,7 +39,8 @@ const addresses = {
         address: baseUrl
         , ignores: [
             {type: "css", selector: ".main-slider-v2", description: "slide may change during screenshot making"},
-            {type: "css", selector: ".article-list__preview-wrap", description: "new list"}
+            // {type: "css", selector: ".article-list__preview-wrap", description: "new list"}
+            {type: "css", selector: ".article__preview > a", description: "each article card"}
         ]
         , bounds: {
             "xs": { left: 0, top: 69, right: 574, bottom: 468 },
@@ -52,24 +53,47 @@ const addresses = {
     "news": {address: baseUrl+"/news"
         , waits: [{type: "css", selector: ".article-list .article__preview"}]
         , ignores: [
-            {type: "css", selector: "#articles", description: "new list"}
+            // {type: "css", selector: "#articles", description: "new list"}
+            {type: "css", selector: ".article__preview > a", description: "each article card"}
         ]
     },
-    "newsItemWithWideImage": {address: baseUrl+"/news/159935"},
-    // "newsItemWithSmallImage": {address: baseUrl+"/news/162380"},
-    // "newsItemWithoutImage": {address: baseUrl+"/news/159825"},
-    // "articleWithSideMenu_svedenEducation": {address: baseUrl+"/sveden/education"},
-    // "articleWithoutSideMenu_sveden": {address: baseUrl+"/sveden"},
-    // "depts": {address: baseUrl+"/depts"},
-    // "dept": {address: baseUrl+"/depts/294"},
-    // "timetable": {address: baseUrl+"/timetable"},
-    // "people": {address: baseUrl+"/people"},
-    // "profile_17": {address: baseUrl+"/people/17"},
-    // "articleWithList_lectures": {address: baseUrl+"/org/projects/lectures"},
-    // "admissionsDegrees": {address: baseUrl+"/admissions/degrees"
-    //     , waits: [{type: "css", selector: ".applicants_specialization .applicants__places"}]
-    // },
-    // "feedback": {address: baseUrl+"/feedback"}
+    "admissions": {address: baseUrl+"/admissions"
+        , waits: [{type: "css", selector: ".na-science-container .na-science"}]
+    },
+    "admissions-degrees": {address: baseUrl+"/admissions/degrees"
+        , waits: [{type: "css", selector: ".applicants_specialization .applicants__places"}]
+        , ignores: [
+            {type: "css", selector: ".applicants_specialization"}
+        ]
+    },
+    "admissions-degrees-rating": {address: baseUrl+"/admissions/degrees/51259"
+        , waits: [{type: "css", selector: ".applicants__list-table-wrap.applicants__list-table-wrap--bottom"}]
+        , ignores: [
+            {type: "css", selector: ".js-applicants.glasspane__wrapper"}
+        ]
+    },
+
+    "news-item_with-wide-image": {address: baseUrl+"/news/159935"},
+    "news-item_with-small-image": {address: baseUrl+"/news/162380"},
+    "news-item_without-image": {address: baseUrl+"/news/159825"},
+    
+    "article_with-side-menu": {address: baseUrl+"/sveden/education"},
+    "article_without-side-menu": {address: baseUrl+"/sveden"},
+    "article_with-list": {address: baseUrl+"/org/projects/lectures"},
+    
+    "depts": {address: baseUrl+"/depts"},
+    "dept": {address: baseUrl+"/depts/294"},
+    
+    "people": {address: baseUrl+"/people"},
+    "profile": {address: baseUrl+"/people/17"},
+
+    "edu-programs": {address: baseUrl+"/edu/programs"},
+    "speciality": {address: baseUrl+"/edu/programs/1013100"},
+    "speciality-implementation": {address: baseUrl+"/edu/programs/1013100/4267916"},
+
+    "feedback": {address: baseUrl+"/feedback"},
+    "timetable": {address: baseUrl+"/timetable"},
+
 };
 
 const directories = {

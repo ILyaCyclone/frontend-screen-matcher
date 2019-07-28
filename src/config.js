@@ -1,33 +1,23 @@
 const resolutions = {
-    "xs": {
-        infix: "xs",
-        description : "mobile 1 column",
-        width: 400,
-        diffCluster: { left: 0, top: 69, right: 574, bottom: 468 }
+    "375-iphone8": {
+        description: "xs - mobile 1 column",
+        device: "iPhone 8"
+    }, 
+    "576": {
+        description: "sm - mobile 2 column",
+        width: 576
     },
-    "sm": {
-        infix: "sm",
-        description: "mobile 2 column",
-        width: 576,
-        diffCluster: { left: 0, top: 69, right: 671, bottom: 468 }
+    "768-iPad": {
+        description: "md - tablet 3 column",
+        device: "iPad"
     },
-    "md": {
-        infix: "md",
-        description: "tablet 3 column",
-        width: 768,
-        diffCluster: { left: 0, top: 156, right: 769, bottom: 705 }
+    "992": {
+        description: "lg - desktop 4 column",
+        width: 992
     },
-    "lg": {
-        infix: "lg",
-        description: "desktop 4 column",
-        width: 992,
-        diffCluster: { left: 0, top: 156, right: 993, bottom: 705 }
-    },
-    "xl": {
-        infix: "xl",
-        description: "large desktop 4 column",
-        width: 1200,
-        diffCluster: { left: 0, top: 156, right: 1201, bottom: 705 }
+    "1240": {
+        description: "xl - large desktop 4 column",
+        width: 1240
     }
 };
 

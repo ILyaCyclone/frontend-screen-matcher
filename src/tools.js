@@ -1,4 +1,14 @@
 const fs = require('fs');
+const rimraf = require("rimraf");
+
+
+
+function clearFolder(directory) {
+    rimraf.sync(`screenshots/${directory}/*`);
+}
+
+
+
 
 function getArray(variable) {
 
@@ -40,6 +50,7 @@ function isUndefinedOrNull(object) {
     }
 }
 
+module.exports.clearFolder = clearFolder;
 module.exports.getArray = getArray;
 module.exports.checkForDirectory = checkForDirectory;
 module.exports.exist = exist;

@@ -1,7 +1,7 @@
-const puppeteer = require('puppeteer');
 const path = require("path");
 const fs = require("fs");
-const rimraf = require("rimraf");
+const puppeteer = require('puppeteer');
+const devices = require('puppeteer/DeviceDescriptors');
 
 const tools = require('./tools.js');
 const config = require('./config');
@@ -32,7 +32,8 @@ const pLimit = require('p-limit')(concurrency);
 
 async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn, shouldClearFolder) {
     if (shouldClearFolder === "true") {
-        clearFolder(directory);
+        tools.clearFolder(directory);
+        logger.debug(`cleared folder ${directory}`);
     }
 
     const makeScreenshotsStartMillis = new Date().getTime();
@@ -41,7 +42,7 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     let finishedPageCount = 0;
     let madeScreenshotCount = 0;
 
-    logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages...`);
+    logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages (about ${neededScreenshotCount * 3} seconds)...`);
     await Promise.all(
         Object.entries(addressesConfig).map(async ([addressKey, address]) =>
             pLimit(() =>
@@ -58,13 +59,13 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                         const ignoredObject = new Object();
                         for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
                             const isFirstResolution = resolutionKey == Object.entries(resolutionsConfig)[0][0];
-                            const width = resolution.width;
-                            const filename = `${addressKey}_${width}`;
+                            const filename = `${addressKey}_${resolutionKey}`;
                             const savePath = config.directories[directory].path;
 
-                            logger.debug(`making screenshot for ${url} of width ${width}...`);
+                            logger.debug(`making screenshot for ${url} of ${resolutionKey}...`);
 
-                            await page.setViewport({ width: width, height: 600 });
+                            await emulateDevice(page, resolution);
+
                             if (hasWaits && isFirstResolution) {
                                 await pageWaits(page, address.waits);
                             }
@@ -74,10 +75,10 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
 
                             const ignoredElements = await getIgnoredElements(page, address);
                             if (ignoredElements != null && ignoredElements.length > 0) {
-                                ignoredObject[width] = ignoredElements;
+                                ignoredObject[resolutionKey] = ignoredElements;
                             }
 
-                            logger.debug(`finish screenshot for ${url} of width ${width}`);
+                            logger.debug(`finish screenshot for ${url} of ${resolutionKey}`);
                         }
 
                         savePageMeta(directory, addressKey, ignoredObject);
@@ -90,7 +91,8 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                         // logger.error(msg);
                         reject(msg);
                     } finally {
-                        browser.close();
+                        browser.close()
+                            .catch(rejectReason => logger.error("failed to close browser: " + rejectReason));
                     }
                 })
             )
@@ -104,12 +106,6 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     const makeScreenshotsEndMillis = new Date().getTime();
     const makeScreenshotsElapsedMillis = makeScreenshotsEndMillis - makeScreenshotsStartMillis;
     logger.info(`Finished making ${madeScreenshotCount} screenshots in ${(makeScreenshotsElapsedMillis / 1000).toFixed(1)} seconds.`);
-}
-
-
-function clearFolder(directory) {
-    rimraf.sync(`screenshots/${directory}/*`);
-    logger.debug(`cleared folder ${directory}`);
 }
 
 
@@ -151,6 +147,15 @@ async function pageWaits(page, waits) {
     }
 }
 
+
+async function emulateDevice(page, resolution) {
+    if (resolution.device != null) {
+        await page.emulate(devices[resolution.device]);
+    } else {
+        await page.emulate({ "viewport": { width: width, height: 600 }, "userAgent": await browser.userAgent() });
+        //await page.setViewport({ width: width, height: 600 });
+    }
+}
 
 
 async function getIgnoredElements(page, address) {

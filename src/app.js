@@ -5,6 +5,7 @@ const mocha = new Mocha({
     ui: 'bdd',
     reporter: 'list'}).addFile('./src/screen-matcher');
 const looksSame = require("./looks-same-image-matcher");
+const screenshotMatcher = require("./screenshot-matcher");
 
 const config = require('./config');
 const addresses = config.addresses;
@@ -38,7 +39,25 @@ yargs
     }, (argv) => {
         screenshotMaker.makeScreenshots(argv.size, argv.url, argv.dir, argv.fn, argv.clear);
     })
+ 
     
+    
+
+    .command(['test2 [res] [addr]','t2'], 'start a test', (yargs) => {
+        yargs
+            .option('res', {
+                describe: 'resolution key',
+                default: resolutions,
+                type: "string"
+            })
+            .option('addr', {
+                describe: 'address key',
+                default: addresses
+            })
+        }, (argv) => {
+            screenshotMatcher.match(argv.res, argv.addr);
+        })
+
 
     .command(['test [size] [fn]','t'], 'start a test', (yargs) => {
     yargs

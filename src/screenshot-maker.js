@@ -42,17 +42,17 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     let finishedPageCount = 0;
     let madeScreenshotCount = 0;
 
-    logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages (3-5 seconds each screen)...`);
+    logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages...`);
     await Promise.all(
         Object.entries(addressesConfig).map(async ([addressKey, address]) =>
             pLimit(() =>
                 new Promise(async (resolve, reject) => {
                     const url = address.address;
 
-                    const browser = await puppeteer.launch({ args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] });
+                    const browser = await createBrowser();
                     try {
                         const page = await createPage(browser, address);
-                        const hasWaits = address.waits != null;
+                        const hasWaits = address.waits != null; // should wait for asynchronous tasks to complete
 
                         await page.goto(url);
 
@@ -110,9 +110,22 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
 }
 
 
+
+async function createBrowser() {
+    return await puppeteer.launch();
+    // { args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] }
+    // --disable-dev-shm-usage may be needed for Docker
+    // lisr of switches: https://peter.sh/experiments/chromium-command-line-switches/
+}
+
 async function createPage(browser, addressObject) {
     const page = await browser.newPage();
-    //page.setDefaultTimeout(15 * 1000);
+    page.on("error", (error) => {
+        // handle internal errors
+        logger.error("page error: " + error);
+        throw error;
+    });
+    //page.setDefaultTimeout(15 * 1000); // default is 30 seconds
     //await page.setCacheEnabled(false);
     // await setPageWaits(page, addressObject.waits);
     return page;

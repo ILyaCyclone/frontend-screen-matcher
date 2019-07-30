@@ -202,12 +202,13 @@ async function getIgnoredElements(page, address) {
  * @return {top, left, bottom, right} coordinates of ElementHandle
  */
 async function getElementCoordinates(element) {
-    const rect = await element.boundingBox(); // {x, y, width, height}
+    const box = await element.boundingBox(); // {x, y, width, height}
     //console.log(JSON.stringify(await element.boxModel()));
-    return {
-        "top": Math.floor(rect.y), "left": Math.floor(rect.x)
-        , "bottom": Math.ceil(rect.y + rect.height), "right": Math.ceil(rect.x + rect.width)
+    const coordinates = {
+        "top": Math.floor(box.y), "left": Math.floor(box.x)
+        , "bottom": Math.ceil(box.y + box.height - 1), "right": Math.ceil(box.x + box.width - 1)
     };
+    return coordinates;
 }
 
 
@@ -218,7 +219,9 @@ function savePageMeta(directory, addressKey, ignoredObject) {
         const pageMetaFileName = config.directories[directory].path.concat(path.sep, addressKey, '.json');
         const pageMetaObject = { "ignores": ignoredObject };
         const pageMetaFileContent = JSON.stringify(pageMetaObject, null, 2); // prettify
-        fs.writeFileSync(pageMetaFileName, pageMetaFileContent);
+        fs.writeFile(pageMetaFileName, pageMetaFileContent, err => {
+            if(err) logger.error("Could not save page meta file: "+err);
+        });
     }
 }
 

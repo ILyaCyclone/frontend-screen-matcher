@@ -48,18 +48,20 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
             pLimit(() =>
                 new Promise(async (resolve, reject) => {
                     const url = address.address;
+                    const saveScreenshotPromises = [];
 
                     const browser = await createBrowser();
                     try {
                         const page = await createPage(browser, address);
-                        const hasWaits = address.waits != null; // should wait for asynchronous tasks to complete
+                        const hasWaits = tools.isNotEmptyArray(address.waits); // should wait for asynchronous tasks to complete
 
                         await page.goto(url);
 
                         const ignoredObject = new Object();
                         for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
                             const filename = `${addressKey}_${resolutionKey}`;
-                            const savePath = config.directories[directory].path;
+                            const saveFolder = config.directories[directory].path;
+                            const baseFileNAme = saveFolder + path.sep + filename;
 
                             logger.debug(`making screenshot for ${url} of ${resolutionKey}...`);
 
@@ -71,11 +73,25 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                                 await pageWaits(page, address.waits);
                             }
 
-                            await page.screenshot({ path: savePath.concat(path.sep, filename, '.png'), fullPage: true });
-                            madeScreenshotCount++;
+                            const imageBuffer = await page.screenshot({ fullPage: true });
+                            
+
+                            // make it sync so when know when the whole process is finished
+                            // fs.writeFileSync(baseFileName + '.png', imageBuffer);
+                            // madeScreenshotCount++;
+                            // save screenshots async
+                            saveScreenshotPromises.push(new Promise((resolve, reject) =>
+                                fs.writeFile(baseFileName + '.png', imageBuffer
+                                    , err => {
+                                        if (err) reject("Could not write file " + filename);
+                                        madeScreenshotCount++;
+                                        resolve();
+                                    }
+                                )
+                            ));
 
                             const ignoredElements = await getIgnoredElements(page, address);
-                            if (ignoredElements != null && ignoredElements.length > 0) {
+                            if (tools.isNotEmptyArray(ignoredElements)) {
                                 ignoredObject[resolutionKey] = ignoredElements;
                             }
 
@@ -83,6 +99,9 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                         }
 
                         savePageMeta(directory, addressKey, ignoredObject);
+
+                        // wait until all screenshots saved
+                        await Promises.all(saveScreenshotPromises);
 
                         finishedPageCount++;
                         logger.info(`finished ${url} (${finishedPageCount}/${neededPageCount})`)
@@ -220,7 +239,7 @@ function savePageMeta(directory, addressKey, ignoredObject) {
         const pageMetaObject = { "ignores": ignoredObject };
         const pageMetaFileContent = JSON.stringify(pageMetaObject, null, 2); // prettify
         fs.writeFile(pageMetaFileName, pageMetaFileContent, err => {
-            if(err) logger.error("Could not save page meta file: "+err);
+            if (err) logger.error("Could not save page meta file: " + err);
         });
     }
 }

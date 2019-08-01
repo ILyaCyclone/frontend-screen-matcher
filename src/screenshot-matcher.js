@@ -3,10 +3,8 @@ const devices = require('puppeteer/DeviceDescriptors');
 
 const path = require("path");
 const fs = require("fs");
-var drawing = require('pngjs-draw'); // https://github.com/aloisdeniel/node-pngjs-draw
-var PNG = drawing(require('pngjs').PNG);
 
-
+const decorator = require('./screenshot-decorator');
 const tools = require('./tools.js');
 const config = require('./config');
 const resolutionsConfig = config.resolutions;
@@ -105,31 +103,9 @@ function compare(goldenFilePath, testFilePath, resultFilePath, ignores) {
                     if (error != null) {
                         logger.error("error creating diff buffer: " + error);
                     } else {
-                        // mark ignored areas
-                        // {filterType: 4}
-                        new PNG().parse(diffImageBuffer, (error, image) => {
-                            if (error) {
-                                logger.error("Could not parse image: " + error);
-                            }
-                            for (let ignoredObject of ignores) {
-                                for (let ignoredCoordinates of ignoredObject.coordinates) {
-                                    const rectX = ignoredCoordinates.left;
-                                    const rectY = ignoredCoordinates.top;
-                                    const rectWidth = ignoredCoordinates.right - ignoredCoordinates.left + 1;
-                                    const rectHeight = ignoredCoordinates.bottom - ignoredCoordinates.top + 1;
-                                    console.log("drawing rect: " + JSON.stringify(ignoredCoordinates));
-                                    console.log(`rectWidth: ${rectWidth} rectHeight: ${rectHeight}`)
-                                    image.fillRect(rectX, rectY, rectWidth, rectHeight, image.colors.green(100));
-                                    image.drawRect(rectX, rectY, rectWidth, rectHeight, image.colors.green(255));
-                                    // const lineThickness = 3;
-                                    // for (let i = 0; i < lineThickness; i++) {
-                                    //     this.drawRect(rectX+i, rectY+i, rectWidth-(i==0?0:(i+1)), rectHeight-(i==0?0:(i+1)), this.colors.green(255))
-                                    // }
-                                }
-                            }
-                            image.pack().pipe(fs.createWriteStream('blue.out.png'));
-                            // image.pack().pipe(fs.createWriteStream(resultFilePath));
-                        });
+                        const decoratedImageBuffer = decorator.markIgnoredAreas(diffImageBuffer, ignores);
+                        fs.writeFileSync('blue.out.png', decoratedImageBuffer);
+                        // fs.writeFileSync(resultFilePath, decoratedImageBuffer);
                     }
                 }
                 );

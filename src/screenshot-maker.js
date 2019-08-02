@@ -43,90 +43,143 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     let madeScreenshotCount = 0;
 
     logger.info(`Started making ${neededScreenshotCount} screenshots on ${neededPageCount} pages...`);
-    await Promise.all(
-        Object.entries(addressesConfig).map(async ([addressKey, address]) =>
-            pLimit(() =>
-                new Promise(async (resolve, reject) => {
-                    const url = address.address;
-                    const saveScreenshotPromises = [];
-
-                    const browser = await createBrowser();
-                    try {
-                        const page = await createPage(browser, address);
-                        const hasWaits = tools.isNotEmptyArray(address.waits); // should wait for asynchronous tasks to complete
-
-                        await page.goto(url);
-                        const hasErrors = await hasNoUicomponentErrors(page);
-
-                        const ignoredObject = new Object();
-                        for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
-                            const filename = `${addressKey}_${resolutionKey}`;
-                            const saveFolder = config.directories[directory].path;
-                            const baseFileName = saveFolder + path.sep + filename;
-
-                            logger.debug(`making screenshot for ${url} of ${resolutionKey}...`);
-
-                            await emulateDevice(browser, page, resolution);
-
-                            if (hasWaits) {
-                                // possible optimization: call pageWaits only during first page resoltion walkthrough
-                                // but for stability leave it here, shouldn't take any noticable time on subsecuent resolutions
-                                await pageWaits(page, address.waits);
-                            }
-
-                            const imageBuffer = await page.screenshot({ fullPage: true });
-
-
-                            // make it sync so when know when the whole process is finished
-                            // fs.writeFileSync(baseFileName + '.png', imageBuffer);
-                            // madeScreenshotCount++;
-                            // save screenshots async
-                            saveScreenshotPromises.push(new Promise((resolve, reject) =>
-                                fs.writeFile(baseFileName + '.png', imageBuffer
-                                    , err => {
-                                        if (err) reject("Could not write file " + filename);
-                                        madeScreenshotCount++;
-                                        resolve();
-                                    }
-                                )
-                            ));
-
-                            const ignoredElements = await getIgnoredElements(page, address);
-                            if (tools.isNotEmptyArray(ignoredElements)) {
-                                ignoredObject[resolutionKey] = ignoredElements;
-                            }
-
-                            logger.debug(`finish screenshot for ${url} of ${resolutionKey}`);
-                        }
-
-                        savePageMeta(directory, addressKey, ignoredObject);
-
-                        // wait until all screenshots saved
-                        await Promise.all(saveScreenshotPromises);
-
-                        finishedPageCount++;
-                        logger.info(`finished ${url} (${finishedPageCount}/${neededPageCount})`)
-                        resolve();
-                    } catch (e) {
-                        const msg = `failed making screenshot for ${url}: ${e}`;
-                        // logger.error(msg);
-                        reject(msg);
-                    } finally {
-                        browser.close()
-                            .catch(rejectReason => logger.error("failed to close browser: " + rejectReason));
-                    }
+    //await Promise.allSettled( // should use this when available - wait for all promises to complete with any result
+    // await Promise.all( // cancels upon any failure
+    // Object.entries(addressesConfig).map(([addressKey, address]) =>
+    const addressPromises = [];
+    for ([addressKey, address] of Object.entries(addressesConfig)) {
+        addressPromises.push(
+            makeScreenshotsForAddress(addressKey, address, resolutionsConfig, directory)
+                .then(() => {
+                    finishedPageCount++;
+                    madeScreenshotCount += Object.keys(resolutionsConfig).length;
+                    // logger.info(`finished ${addressKey} (${finishedPageCount}/${neededPageCount})`)
+                    logger.info(`finished ${finishedPageCount}/${neededPageCount}`)
                 })
-            )
-        )
-    )
-        .catch(rejected => {
-            logger.error(rejected);
-        });
+                .catch(err => console.error(`Failed makeScreenshotsForAddress for ${addressKey}: ${err}`))
+        );
+    }
+
+    //     )
+    // )
+    //     .catch (rejected => {
+    //     logger.error(rejected);
+    // });
+
+    await Promise.all(addressPromises).catch(rejected => {
+        logger.error("Rejected address promise: " + rejected);
+    });
 
     const makeScreenshotsEndMillis = new Date().getTime();
     const makeScreenshotsElapsedMillis = makeScreenshotsEndMillis - makeScreenshotsStartMillis;
     logger.info(`Finished making ${madeScreenshotCount} screenshots in ${(makeScreenshotsElapsedMillis / 1000).toFixed(1)} seconds.`);
 }
+
+
+
+
+
+
+function makeScreenshotsForAddress(addressKey, address, resolutionsConfig, directory) {
+    console.log(`process address: ${addressKey}`)
+    return pLimit(() =>
+        new Promise(async (resolve, reject) => {
+            const url = address.address;
+            const saveScreenshotPromises = [];
+
+            const browser = await createBrowser();
+            try {
+                const page = await createPage(browser, address);
+
+                await page.goto(url);
+                const hasErrors = await hasNoUicomponentErrors(page);
+
+                const ignoredObject = new Object();
+                for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
+                    await makeScreenshotsForAddressAndResolution(page
+                        , addressKey, address, ignoredObject
+                        , resolutionKey, resolution
+                        , directory);
+                }
+
+                savePageMeta(directory, addressKey, ignoredObject);
+
+                // wait until all screenshots saved
+                await Promise.all(saveScreenshotPromises);
+
+                resolve();
+            } catch (e) {
+                const msg = `failed making screenshot for ${url}: ${e}`;
+                // logger.error(msg);
+                reject(msg);
+            } finally {
+                browser.close()
+                    .catch(rejectReason => logger.error("failed to close browser: " + rejectReason));
+            }
+        })
+    );
+}
+
+
+
+
+
+async function makeScreenshotsForAddressAndResolution(page
+    , addressKey, address, ignoredObject
+    , resolutionKey, resolution
+    , directory) {
+    console.log(`process address and resolution: ${addressKey}, ${resolutionKey}`);
+
+    const filename = `${addressKey}_${resolutionKey}`;
+    const saveFolder = config.directories[directory].path;
+    const baseFileName = saveFolder + path.sep + filename;
+
+    const hasWaits = tools.isNotEmptyArray(address.waits); // should wait for asynchronous tasks to complete
+    const hasIgnores = tools.isNotEmptyArray(address.ignores);
+
+    logger.debug(`making screenshot for ${address.address} of ${resolutionKey}...`);
+
+    await emulateDevice(page, resolution);
+
+    if (hasWaits) {
+        // possible optimization: call pageWaits only during first page resoltion walkthrough
+        // but for stability leave it here, shouldn't take any noticable time on subsecuent resolutions
+        await pageWaits(page, address.waits);
+    }
+
+    const imageBuffer = await page.screenshot({ fullPage: true });
+
+
+    // make it sync so when know when the whole process is finished
+    // fs.writeFileSync(baseFileName + '.png', imageBuffer);
+    // madeScreenshotCount++;
+    // save screenshots async
+    // saveScreenshotPromises.push(new Promise((resolve, reject) =>
+    fs.writeFile(baseFileName + '.png', imageBuffer
+        , err => {
+            if (err) reject("Could not write file " + filename);
+            // madeScreenshotCount++;
+            // resolve();
+        }
+    );
+    // ));
+
+    if (hasIgnores) {
+        const ignoredElements = await getIgnoredElements(page, address);
+        if (tools.isNotEmptyArray(ignoredElements)) {
+            // console.log(`${resolutionKey}, ${addressKey} writing to ignoredObject`);
+            ignoredObject[resolutionKey] = ignoredElements;
+        } else {
+            console.log(`${addressKey}, ${resolutionKey}, not found ignoredElements`);
+        }
+    }
+
+    logger.debug(`finish screenshot for ${address.address} of ${resolutionKey}`);
+}
+
+
+
+
 
 
 
@@ -181,40 +234,38 @@ async function pageWaits(page, waits) {
 }
 
 
-async function emulateDevice(browser, page, resolution) {
+async function emulateDevice(page, resolution) {
+    // const browser = page.browser();
     if (resolution.device != null) {
         await page.emulate(devices[resolution.device]);
     } else {
-        await page.emulate({ "viewport": { width: resolution.width, height: 600 }, "userAgent": await browser.userAgent() });
-        //await page.setViewport({ width: width, height: 600 });
+        // await page.emulate({ "viewport": { width: resolution.width, height: 600 }, "userAgent": await browser().userAgent() });
+        await page.setViewport({ width: resolution.width, height: 600 });
     }
 }
 
 
 async function getIgnoredElements(page, address) {
-    if (address.ignores) {
-        const ignoredElements = new Array();
-        for (const ignore of address.ignores) {
-            switch (ignore.type) {
-                case "css":
-                    const elements = await page.$$(ignore.selector);
-                    if (elements.length > 0) {
-                        const coordinates = await Promise.all(elements.map(async element => await getElementCoordinates(element)));
-                        const ignoredElement = {
-                            "selector": ignore.selector,
-                            "description": ignore.description,
-                            coordinates
-                        };
-                        ignoredElements.push(ignoredElement);
-                    }
-                    break;
-                default:
-                    logger.error("Unsupported ignored type: " + ignore.type);
-            }
+    const ignoredElements = new Array();
+    for (const ignore of address.ignores) {
+        switch (ignore.type) {
+            case "css":
+                const elements = await page.$$(ignore.selector);
+                if (elements.length > 0) {
+                    const coordinates = await Promise.all(elements.map(async element => await getElementCoordinates(element)));
+                    const ignoredElement = {
+                        "selector": ignore.selector,
+                        "description": ignore.description,
+                        coordinates
+                    };
+                    ignoredElements.push(ignoredElement);
+                }
+                break;
+            default:
+                logger.error("Unsupported ignored type: " + ignore.type);
         }
-        return ignoredElements;
     }
-    return null;
+    return ignoredElements;
 }
 
 /**
@@ -247,12 +298,12 @@ function savePageMeta(directory, addressKey, ignoredObject) {
 
 async function hasNoUicomponentErrors(page) {
     const html = await page.content();
-    const hasErrors = false;
-    if(html.includes("#error")) {
+    let hasErrors = false;
+    if (html.includes("#error")) {
         logger.warn(`warning: page ${page.url()} has uicomponent error`);
         hasErrors = true;
     }
-    if(html.includes("#warning")) {
+    if (html.includes("#warning")) {
         logger.warn(`warning: page ${page.url()} has uicomponent warning`);
         hasErrors = true;
     }

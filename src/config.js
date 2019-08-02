@@ -30,6 +30,7 @@ const resolutions = {
 };
 
 const baseUrl = "https://rut-miit.ru";
+// const baseUrl = "http://localhost";
 
 const addresses = {
     "main": {
@@ -40,13 +41,6 @@ const addresses = {
             // {type: "css", selector: ".article-list__preview-wrap", description: "new list"}
             {type: "css", selector: ".article__preview > a", description: "each article card"}
         ]
-        , bounds: {
-            "xs": { left: 0, top: 69, right: 574, bottom: 468 },
-            "sm": { left: 0, top: 69, right: 671, bottom: 468 },
-            "md": { left: 0, top: 156, right: 769, bottom: 705 },
-            "lg": { left: 0, top: 156, right: 993, bottom: 705 },
-            "xl": { left: 0, top: 156, right: 1201, bottom: 705 },
-        }
     },
     "news": {address: baseUrl+"/news"
         , waits: [{type: "css", selector: ".article-list .article__preview"}]
@@ -71,6 +65,9 @@ const addresses = {
         ]
     },
 
+    "timetable": {address: baseUrl+"/timetable/141448"},
+    "timetable-catalog": {address: baseUrl+"/timetable"},
+
     "news-item_with-wide-image": {address: baseUrl+"/news/159935"},
     "news-item_with-small-image": {address: baseUrl+"/news/162380"},
     "news-item_without-image": {address: baseUrl+"/news/159825"},
@@ -90,8 +87,6 @@ const addresses = {
     "speciality-implementation": {address: baseUrl+"/edu/programs/1013100/4267916"},
 
     "feedback": {address: baseUrl+"/feedback"},
-    "timetable": {address: baseUrl+"/timetable"},
-
 };
 
 const directories = {

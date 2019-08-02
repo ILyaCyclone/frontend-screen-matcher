@@ -55,6 +55,7 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                         const hasWaits = address.waits != null; // should wait for asynchronous tasks to complete
 
                         await page.goto(url);
+                        const hasErrors = await hasNoUicomponentErrors(page);
 
                         const ignoredObject = new Object();
                         for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
@@ -223,6 +224,21 @@ function savePageMeta(directory, addressKey, ignoredObject) {
             if(err) logger.error("Could not save page meta file: "+err);
         });
     }
+}
+
+
+async function hasNoUicomponentErrors(page) {
+    const html = await page.content();
+    const hasErrors = false;
+    if(html.includes("#error")) {
+        logger.warn(`warning: page ${page.url()} has uicomponent error`);
+        hasErrors = true;
+    }
+    if(html.includes("#warning")) {
+        logger.warn(`warning: page ${page.url()} has uicomponent warning`);
+        hasErrors = true;
+    }
+    return hasErrors;
 }
 
 

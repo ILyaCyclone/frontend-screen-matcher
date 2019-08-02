@@ -11,6 +11,10 @@ function sleep(millis) {
     return new Promise(resolve => setTimeout(resolve, millis));
 }
 
+function isNotEmptyArray(arr) {
+    return arr != null && Array.isArray(arr) && arr.length > 0;
+}
+
 
 
 function getArray(variable) {
@@ -56,6 +60,7 @@ function isUndefinedOrNull(object) {
 
 module.exports.clearFolder = clearFolder;
 module.exports.sleep = sleep;
+module.exports.isNotEmptyArray = isNotEmptyArray;
 module.exports.getArray = getArray;
 module.exports.checkForDirectory = checkForDirectory;
 module.exports.exist = exist;

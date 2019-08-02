@@ -81,9 +81,9 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
 
 
 function makeScreenshotsForAddress(addressKey, address, resolutionsConfig, directory) {
-    console.log(`process address: ${addressKey}`)
     return pLimit(() =>
         new Promise(async (resolve, reject) => {
+            console.log(`process address: ${addressKey}`)
             const url = address.address;
             const saveScreenshotPromises = [];
 

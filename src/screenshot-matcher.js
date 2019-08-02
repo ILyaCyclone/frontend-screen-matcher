@@ -57,79 +57,88 @@ async function match(resolutionKey, addressKey) {
 function compare(goldenFilePath, testFilePath, diffFilePath, ignores) {
     console.log(`compare ${goldenFilePath} ${testFilePath} ignoring ${ignores}`);
 
-    looksSame(goldenFilePath, testFilePath, { stopOnFirstFail: false }, function (error, { equal, diffBounds, diffClusters }) {
-        if (error != null) {
-            logger.error("error during image comparison for " + testFilePath + ": " + error);
-        }
-        if (equal) {
-            logger.info(testFilePath + " matches");
-            return;
-        }
-
-        let matches = true;
-        for (let diffCluster of diffClusters) {
-            // console.log("diffCluster: " + JSON.stringify(diffCluster));
-            if (!isDiffClusterIgnored(diffCluster, ignores)) {
-                logger.info("===> " + testFilePath + " does not match in cluster: " + JSON.stringify(diffCluster));
-                matches = false;
-                break;
+    looksSame(goldenFilePath, testFilePath, { stopOnFirstFail: false, shouldCluster: true, clustersSize: 0 }
+        , (error, { equal, diffBounds, diffClusters }) => {
+            if (error != null) {
+                logger.error("error during image comparison for " + testFilePath + ": " + error);
             }
-        }
-        if (matches) {
-            logger.info(testFilePath + " matches (with ignored areas)");
-            return;
-        } else {
-            logger.info("===> " + testFilePath + " does not match");
-
-            const looksSameDiffOptions = {
-                reference: goldenFilePath,
-                current: testFilePath,
-                // diff: diffFilePath,
-                highlightColor: 'red',
-                ignoreAntialiasing: false,
+            if (equal) {
+                logger.info(testFilePath + " matches");
+                return;
             }
 
-            if (ignores == null) {
-                // save diff image to file directly
-                looksSameDiffOptions.diff = diffFilePath;
-                looksSame.createDiff(looksSameDiffOptions, err => {
-                    if (err) {
-                        logger.error("error creating diff image: " + err);
-                    }
-                });
-            } else {
-                // save diff image to buffer
-                looksSame.createDiff(looksSameDiffOptions, async (error, diffImageBuffer) => {
-                    if (error) {
-                        logger.error("error creating diff buffer: " + error);
-                    } else {
-                        const decoratedImageBuffer = await decorator.markIgnoredAreas(diffImageBuffer, ignores);
-                        fs.writeFile(diffFilePath, decoratedImageBuffer
-                            , err => {
-                                if (err) {
-                                    logger.error("Could not write decorated image: " + err + ". Writing undecorated image instead,");
-                                    fs.writeFile(diffFilePath, diffImageBuffer
-                                        , err2 => { if (err2) logger.error("Could not write undecorated image: " + err2); }
-                                    );
-                                }
-                            });
-                    }
+            let matches = true;
+            const nonIgnoredDiffClusters = [];
+            for (let diffCluster of diffClusters) {
+                // console.log("diffCluster: " + JSON.stringify(diffCluster));
+                if (!isDiffClusterIgnored(diffCluster, ignores)) {
+                    logger.info("===> " + testFilePath + " does not match in cluster: " + JSON.stringify(diffCluster));
+                    nonIgnoredDiffClusters.push(diffCluster);
+                    matches = false;
+                    break;
                 }
-                );
+            }
+            if (matches) {
+                logger.info(testFilePath + " matches (with ignored areas)");
+                return;
+            } else {
+                logger.info("===> " + testFilePath + " does not match");
+
+                const looksSameDiffOptions = {
+                    reference: goldenFilePath,
+                    current: testFilePath,
+                    // diff: diffFilePath,
+                    highlightColor: 'red',
+                    ignoreAntialiasing: false,
+                }
+
+                if (ignores == null) {
+                    // save diff image to file directly
+                    looksSameDiffOptions.diff = diffFilePath;
+                    looksSame.createDiff(looksSameDiffOptions, err => {
+                        if (err) {
+                            logger.error("error creating diff image: " + err);
+                        }
+                    });
+                } else {
+                    // save diff image to buffer
+                    looksSame.createDiff(looksSameDiffOptions, async (error, diffImageBuffer) => {
+                        if (error) {
+                            logger.error("error creating diff buffer: " + error);
+                        } else {
+                            let decoratedImageBuffer = diffImageBuffer;
+                            for (let cluster of nonIgnoredDiffClusters) {
+                                decoratedImageBuffer = await decorator.drawRect(decoratedImageBuffer, cluster, [255, 0, 0], 3);
+                            }
+                            decoratedImageBuffer = await decorator.markIgnoredAreas(decoratedImageBuffer, ignores);
+
+                            fs.writeFile(diffFilePath, decoratedImageBuffer
+                                , err => {
+                                    if (err) {
+                                        logger.error("Could not write decorated image: " + err + ". Writing undecorated image instead,");
+                                        fs.writeFile(diffFilePath, diffImageBuffer
+                                            , err2 => { if (err2) logger.error("Could not write undecorated image: " + err2); }
+                                        );
+                                    }
+                                });
+                        }
+                    }
+                    );
+                }
+
             }
 
-        }
 
-
-    });
+        });
 }
 
 
 function isDiffClusterIgnored(diffCluster, ignores) {
+    const tolerance = 3;
     if (ignores == null) return false;
     for (let ignoredObject of ignores) {
         for (let ignoredCoordinates of ignoredObject.coordinates) {
-            if (withinRectangle(diffCluster, ignoredCoordinates)) {
+            if (withinRectangle(diffCluster, ignoredCoordinates, tolerance)) {
                 return true;
             }
         }
@@ -137,11 +146,11 @@ function isDiffClusterIgnored(diffCluster, ignores) {
     return false;
 }
 
-function withinRectangle(innerRectangle, outerRectangle) {
-    return innerRectangle.top >= outerRectangle.top
-        && innerRectangle.left >= outerRectangle.left
-        && innerRectangle.bottom <= outerRectangle.bottom
-        && innerRectangle.right <= outerRectangle.right;
+function withinRectangle(innerRectangle, outerRectangle, tolerance) {
+    return innerRectangle.top >= outerRectangle.top - tolerance
+        && innerRectangle.left >= outerRectangle.left - tolerance
+        && innerRectangle.bottom <= outerRectangle.bottom + tolerance
+        && innerRectangle.right <= outerRectangle.right + tolerance;
 }
 
 

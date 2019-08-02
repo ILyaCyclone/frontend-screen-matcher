@@ -61,7 +61,7 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                         for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
                             const filename = `${addressKey}_${resolutionKey}`;
                             const saveFolder = config.directories[directory].path;
-                            const baseFileNAme = saveFolder + path.sep + filename;
+                            const baseFileName = saveFolder + path.sep + filename;
 
                             logger.debug(`making screenshot for ${url} of ${resolutionKey}...`);
 
@@ -74,7 +74,7 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                             }
 
                             const imageBuffer = await page.screenshot({ fullPage: true });
-                            
+
 
                             // make it sync so when know when the whole process is finished
                             // fs.writeFileSync(baseFileName + '.png', imageBuffer);
@@ -101,7 +101,7 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                         savePageMeta(directory, addressKey, ignoredObject);
 
                         // wait until all screenshots saved
-                        await Promises.all(saveScreenshotPromises);
+                        await Promise.all(saveScreenshotPromises);
 
                         finishedPageCount++;
                         logger.info(`finished ${url} (${finishedPageCount}/${neededPageCount})`)
@@ -120,8 +120,7 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     )
         .catch(rejected => {
             logger.error(rejected);
-        })
-        ;
+        });
 
     const makeScreenshotsEndMillis = new Date().getTime();
     const makeScreenshotsElapsedMillis = makeScreenshotsEndMillis - makeScreenshotsStartMillis;

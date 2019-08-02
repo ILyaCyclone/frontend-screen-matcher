@@ -54,12 +54,12 @@ async function match(resolutionKey, addressKey) {
     }
 }
 
-function compare(goldenFilePath, testFilePath, resultFilePath, ignores) {
+function compare(goldenFilePath, testFilePath, diffFilePath, ignores) {
     console.log(`compare ${goldenFilePath} ${testFilePath} ignoring ${ignores}`);
 
     looksSame(goldenFilePath, testFilePath, { stopOnFirstFail: false }, function (error, { equal, diffBounds, diffClusters }) {
         if (error != null) {
-            logger.error("error during image comparison for "+testFilePath+": " + error);
+            logger.error("error during image comparison for " + testFilePath + ": " + error);
         }
         if (equal) {
             logger.info(testFilePath + " matches");
@@ -70,12 +70,12 @@ function compare(goldenFilePath, testFilePath, resultFilePath, ignores) {
         for (let diffCluster of diffClusters) {
             // console.log("diffCluster: " + JSON.stringify(diffCluster));
             if (!isDiffClusterIgnored(diffCluster, ignores)) {
-                logger.info("===> " + testFilePath + " does not match in cluster: "+JSON.stringify(diffCluster));
+                logger.info("===> " + testFilePath + " does not match in cluster: " + JSON.stringify(diffCluster));
                 matches = false;
                 break;
             }
         }
-        if(matches) {
+        if (matches) {
             logger.info(testFilePath + " matches (with ignored areas)");
             return;
         } else {
@@ -84,28 +84,35 @@ function compare(goldenFilePath, testFilePath, resultFilePath, ignores) {
             const looksSameDiffOptions = {
                 reference: goldenFilePath,
                 current: testFilePath,
-                // diff: resultFilePath,
+                // diff: diffFilePath,
                 highlightColor: 'red',
                 ignoreAntialiasing: false,
             }
 
             if (ignores == null) {
-                // save diff to file directly
-                looksSameDiffOptions.diff = resultFilePath;
+                // save diff image to file directly
+                looksSameDiffOptions.diff = diffFilePath;
                 looksSame.createDiff(looksSameDiffOptions, err => {
-                    if (error != null) {
-                        logger.error("error creating diff image: " + error);
+                    if (err) {
+                        logger.error("error creating diff image: " + err);
                     }
                 });
             } else {
-                // save diff to buffwe
-                looksSame.createDiff(looksSameDiffOptions, (error, diffImageBuffer) => {
-                    if (error != null) {
+                // save diff image to buffer
+                looksSame.createDiff(looksSameDiffOptions, async (error, diffImageBuffer) => {
+                    if (error) {
                         logger.error("error creating diff buffer: " + error);
                     } else {
-                        const decoratedImageBuffer = decorator.markIgnoredAreas(diffImageBuffer, ignores);
-                        fs.writeFileSync('blue.out.png', decoratedImageBuffer);
-                        // fs.writeFileSync(resultFilePath, decoratedImageBuffer);
+                        const decoratedImageBuffer = await decorator.markIgnoredAreas(diffImageBuffer, ignores);
+                        fs.writeFile(diffFilePath, decoratedImageBuffer
+                            , err => {
+                                if (err) {
+                                    logger.error("Could not write decorated image: " + err + ". Writing undecorated image instead,");
+                                    fs.writeFile(diffFilePath, diffImageBuffer
+                                        , err2 => { if (err2) logger.error("Could not write undecorated image: " + err2); }
+                                    );
+                                }
+                            });
                     }
                 }
                 );
@@ -149,53 +156,6 @@ function readMetadata(addressKey) {
     }
 }
 
-
-
-
-function drawRectangle(png, coordinates) {
-
-    drawHorizintalLine(png, coordinates.left, coordinates.top, coordinates.right - coordinates.left);
-    drawHorizintalLine(png, coordinates.left, coordinates.bottom, coordinates.right - coordinates.left);
-    drawVerticalLine(png, coordinates.left, coordinates.top, coordinates.bottom - coordinates.top);
-    drawVerticalLine(png, coordinates.right, coordinates.top, coordinates.bottom - coordinates.top);
-}
-
-function drawHorizintalLine(png, startX, startY, length) {
-    for (var x = startX; x < length; x++) {
-        var idx = (png.width * startY + x) << 2;
-
-        png.data[idx] = 0; // R
-        png.data[idx + 1] = 255; // G
-        png.data[idx + 2] = 0; // B
-        png.data[idx + 3] = 255; // alpha
-    }
-    for (var x = startX; x < length; x++) {
-        var idx = (png.width * (startY + 1) + x) << 2;
-
-        png.data[idx] = 0; // R
-        png.data[idx + 1] = 255; // G
-        png.data[idx + 2] = 0; // B
-        png.data[idx + 3] = 255; // alpha
-    }
-}
-function drawVerticalLine(png, startX, startY, length) {
-    for (var y = startY; y < length; y++) {
-        var idx = (png.width * y + startX) << 2;
-
-        png.data[idx] = 0; // R
-        png.data[idx + 1] = 255; // G
-        png.data[idx + 2] = 0; // B
-        png.data[idx + 3] = 255; // alpha
-    }
-    for (var y = startY; y < length; y++) {
-        var idx = (png.width * y + (startX + 1)) << 2;
-
-        png.data[idx] = 0; // R
-        png.data[idx + 1] = 255; // G
-        png.data[idx + 2] = 0; // B
-        png.data[idx + 3] = 255; // alpha
-    }
-}
 
 
 function getResolutionWidth(resolution) {

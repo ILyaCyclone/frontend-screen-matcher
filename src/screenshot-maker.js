@@ -1,5 +1,5 @@
 const path = require("path");
-const fs = require("fs");
+const fs = require("fs").promises;
 const puppeteer = require('puppeteer');
 const devices = require('puppeteer/DeviceDescriptors');
 
@@ -27,6 +27,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 const concurrency = 5;
 const pLimit = require('p-limit')(concurrency);
+// another option for puppeteer concurrency is "npm install puppeteer-cluster"
 
 
 
@@ -50,11 +51,11 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
     for ([addressKey, address] of Object.entries(addressesConfig)) {
         addressPromises.push(
             makeScreenshotsForAddress(addressKey, address, resolutionsConfig, directory)
-                .then(() => {
+                .then(result => {
                     finishedPageCount++;
                     madeScreenshotCount += Object.keys(resolutionsConfig).length;
-                    // logger.info(`finished ${addressKey} (${finishedPageCount}/${neededPageCount})`)
-                    logger.info(`finished ${finishedPageCount}/${neededPageCount}`)
+                    logger.info(`finished ${result.addressKey} (${finishedPageCount}/${neededPageCount})`)
+                    // logger.info(`finished ${finishedPageCount}/${neededPageCount}`)
                 })
                 .catch(err => console.error(`Failed makeScreenshotsForAddress for ${addressKey}: ${err}`))
         );
@@ -96,10 +97,14 @@ function makeScreenshotsForAddress(addressKey, address, resolutionsConfig, direc
 
                 const ignoredObject = new Object();
                 for ([resolutionKey, resolution] of Object.entries(resolutionsConfig)) {
-                    await makeScreenshotsForAddressAndResolution(page
-                        , addressKey, address, ignoredObject
+                    const result = await makeScreenshotsForAddressAndResolution(page
+                        , addressKey, address
                         , resolutionKey, resolution
                         , directory);
+
+                    if(tools.isNotEmptyArray(result.ignoredElements)) {
+                        ignoredObject[resolutionKey] = result.ignoredElements;
+                    }    
                 }
 
                 savePageMeta(directory, addressKey, ignoredObject);
@@ -107,7 +112,7 @@ function makeScreenshotsForAddress(addressKey, address, resolutionsConfig, direc
                 // wait until all screenshots saved
                 await Promise.all(saveScreenshotPromises);
 
-                resolve();
+                resolve({addressKey});
             } catch (e) {
                 const msg = `failed making screenshot for ${url}: ${e}`;
                 // logger.error(msg);
@@ -125,7 +130,7 @@ function makeScreenshotsForAddress(addressKey, address, resolutionsConfig, direc
 
 
 async function makeScreenshotsForAddressAndResolution(page
-    , addressKey, address, ignoredObject
+    , addressKey, address
     , resolutionKey, resolution
     , directory) {
     console.log(`process address and resolution: ${addressKey}, ${resolutionKey}`);
@@ -150,31 +155,23 @@ async function makeScreenshotsForAddressAndResolution(page
     const imageBuffer = await page.screenshot({ fullPage: true });
 
 
-    // make it sync so when know when the whole process is finished
-    // fs.writeFileSync(baseFileName + '.png', imageBuffer);
-    // madeScreenshotCount++;
-    // save screenshots async
-    // saveScreenshotPromises.push(new Promise((resolve, reject) =>
-    fs.writeFile(baseFileName + '.png', imageBuffer
-        , err => {
-            if (err) reject("Could not write file " + filename);
-            // madeScreenshotCount++;
-            // resolve();
-        }
-    );
-    // ));
+    fs.writeFile(baseFileName + '.png', imageBuffer)
+        // .then(() => madeScreenshotCount++)
+        .catch(err => logger.error("Could not write screenshot " + baseFileName + '.png: ' + err));
 
+    let ignoredElements = null;    
     if (hasIgnores) {
-        const ignoredElements = await getIgnoredElements(page, address);
-        if (tools.isNotEmptyArray(ignoredElements)) {
-            // console.log(`${resolutionKey}, ${addressKey} writing to ignoredObject`);
-            ignoredObject[resolutionKey] = ignoredElements;
-        } else {
+        ignoredElements = await getIgnoredElements(page, address);
+        if (!tools.isNotEmptyArray(ignoredElements)) {
             console.log(`${addressKey}, ${resolutionKey}, not found ignoredElements`);
         }
     }
 
     logger.debug(`finish screenshot for ${address.address} of ${resolutionKey}`);
+
+    return {
+        addressKey, resolutionKey, ignoredElements
+    }
 }
 
 
@@ -219,7 +216,7 @@ async function createPage(browser, addressObject) {
 
 
 async function pageWaits(page, waits) {
-    if (waits) {
+    if (tools.isNotEmptyArray(waits)) {
         for (wait of waits) {
             switch (wait.type) {
                 case "css":
@@ -289,9 +286,8 @@ function savePageMeta(directory, addressKey, ignoredObject) {
         const pageMetaFileName = config.directories[directory].path.concat(path.sep, addressKey, '.json');
         const pageMetaObject = { "ignores": ignoredObject };
         const pageMetaFileContent = JSON.stringify(pageMetaObject, null, 2); // prettify
-        fs.writeFile(pageMetaFileName, pageMetaFileContent, err => {
-            if (err) logger.error("Could not save page meta file: " + err);
-        });
+        fs.writeFile(pageMetaFileName, pageMetaFileContent)
+            .catch(err => logger.error(`Could not save page meta file ${addressKey}: ${err}`));
     }
 }
 

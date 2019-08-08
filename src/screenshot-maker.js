@@ -56,7 +56,7 @@ async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn
                     // logger.info(`finished ${addressKey} (${finishedPageCount}/${neededPageCount})`)
                     logger.info(`finished ${finishedPageCount}/${neededPageCount}`)
                 })
-                .catch(err => console.error(`Failed makeScreenshotsForAddress for ${addressKey}: ${err}`))
+                .catch(err => console.error(`Failed makeScreenshotsForAddress: ${err}`))
         );
     }
 
@@ -130,6 +130,8 @@ async function makeScreenshotsForAddressAndResolution(page
     , directory) {
     console.log(`process address and resolution: ${addressKey}, ${resolutionKey}`);
 
+    const devtools = await page.target().createCDPSession();
+
     const filename = `${addressKey}_${resolutionKey}`;
     const saveFolder = config.directories[directory].path;
     const baseFileName = saveFolder + path.sep + filename;
@@ -147,7 +149,25 @@ async function makeScreenshotsForAddressAndResolution(page
         await pageWaits(page, address.waits);
     }
 
-    const imageBuffer = await page.screenshot({ fullPage: true });
+    // puppeteer pull request 937
+    const { contentSize } = await devtools.send('Page.getLayoutMetrics');
+    await page.setViewport({ width: resolution.width, height: contentSize.height });
+
+    // await page.evaluate(() => new Promise(resolve => {
+    //     window.requestAnimationFrame(resolve);
+    // }));
+    // await tools.sleep(3000);
+    const imageBuffer = await page.screenshot(
+        //{ fullPage: true }
+        {
+            clip: {
+                x: 0,
+                y: 0,
+                width: resolution.width,
+                height: contentSize.height
+            }
+        }
+    );
 
 
     // make it sync so when know when the whole process is finished
@@ -184,7 +204,8 @@ async function makeScreenshotsForAddressAndResolution(page
 
 
 async function createBrowser() {
-    return await puppeteer.launch();
+    // return await puppeteer.launch();
+    return await puppeteer.launch({ executablePath: "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe" });
     // { args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] }
     // --disable-dev-shm-usage may be needed for Docker
     // lisr of switches: https://peter.sh/experiments/chromium-command-line-switches/
@@ -240,6 +261,7 @@ async function emulateDevice(page, resolution) {
         await page.emulate(devices[resolution.device]);
     } else {
         // await page.emulate({ "viewport": { width: resolution.width, height: 600 }, "userAgent": await browser().userAgent() });
+        // height: await page.evaluate(() => document.body.clientHeight)
         await page.setViewport({ width: resolution.width, height: 600 });
     }
 }
@@ -251,8 +273,12 @@ async function getIgnoredElements(page, address) {
         switch (ignore.type) {
             case "css":
                 const elements = await page.$$(ignore.selector);
-                if (elements.length > 0) {
-                    const coordinates = await Promise.all(elements.map(async element => await getElementCoordinates(element)));
+                const visibleElements = []; // can't do with elements.filter ...
+                for (let element of elements) if (await element.isIntersectingViewport()) visibleElements.push(element);
+
+                if (visibleElements.length > 0) {
+                    const coordinates = await Promise.all(visibleElements
+                        .map(async element => await getElementCoordinates(element)));
                     const ignoredElement = {
                         "selector": ignore.selector,
                         "description": ignore.description,

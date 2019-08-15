@@ -204,8 +204,8 @@ async function makeScreenshotsForAddressAndResolution(page
 
 
 async function createBrowser() {
-    // return await puppeteer.launch();
-    return await puppeteer.launch({ executablePath: "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe" });
+    return await puppeteer.launch();
+    // return await puppeteer.launch({ executablePath: "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe" });
     // { args: ["--proxy-server='direct://'", '--proxy-bypass-list=*'] }
     // --disable-dev-shm-usage may be needed for Docker
     // lisr of switches: https://peter.sh/experiments/chromium-command-line-switches/
@@ -218,9 +218,22 @@ async function createPage(browser, addressObject) {
         logger.error("page error: " + error);
         throw error;
     });
-    //page.setDefaultTimeout(15 * 1000); // default is 30 seconds
+    page.setDefaultTimeout(180 * 1000); // default is 30 seconds
     //await page.setCacheEnabled(false);
     // await setPageWaits(page, addressObject.waits);
+
+    // enable bvi (not working)
+    // await page.setCookie({
+    //     name: "bvi",
+    //     value: "1",
+    //     domain: "http://10.242.101.40"
+    //     // name <string> required
+    //     // value <string> required
+    //     // url <string>
+    //     // domain <string>
+    //     // path <string>
+    // });
+
     return page;
 }
 

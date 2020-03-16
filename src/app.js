@@ -1,3 +1,7 @@
+// npm start sc -- --dir=golden --clear=true
+// npm start sc -- --dir=test --clear=true
+// npm start test2
+
 const yargs = require('yargs');
 const screenshotMaker = require('./screenshot-maker');
 const Mocha = require('mocha');

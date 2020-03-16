@@ -28,6 +28,7 @@ if (process.env.NODE_ENV !== 'production') {
 const concurrency = 5;
 const pLimit = require('p-limit')(concurrency);
 
+const waitTimeout = 180 * 1000; // 180 seconds, default is 30 seconds
 
 
 async function makeScreenshots(resolutionsConfig, addressesConfig, directory, fn, shouldClearFolder) {
@@ -218,7 +219,7 @@ async function createPage(browser, addressObject) {
         logger.error("page error: " + error);
         throw error;
     });
-    page.setDefaultTimeout(180 * 1000); // default is 30 seconds
+    page.setDefaultTimeout(waitTimeout); // default is 30 seconds
     //await page.setCacheEnabled(false);
     // await setPageWaits(page, addressObject.waits);
 

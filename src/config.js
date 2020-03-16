@@ -77,9 +77,14 @@ const addresses = {
     },
 
     "timetable-catalog": { address: baseUrl + "/timetable" },
-    "timetable-group": { address: baseUrl + "/timetable/140048" },
-    "timetable-profile": { address: baseUrl + "/people/709306/timetable" },
-    "timetable-group-exams": { address: baseUrl + "/timetable/140048?start=2020-01-01", description: "exams" },
+    "timetable-group-periodic": { address: baseUrl + "/timetable/140048?start=2020-02-07&type=1" },
+    "timetable-group-non-periodic": { address: baseUrl + "/timetable/157972?start=2020-04-13&type=2" },
+    "timetable-group-distant": { address: baseUrl + "/timetable/167057?start=2019-10-28&type=3" },
+    "timetable-group-exam": { address: baseUrl + "/timetable/140048?start=2020-05-28&type=4" },
+    "timetable-profile-periodic": { address: baseUrl + "/people/709306/timetable?start=2020-02-07&type=1" },
+    "timetable-profile-non-periodic": { address: baseUrl + "/people/168062/timetable?start=2019-09-02&type=2" },
+    "timetable-profile-distant": { address: baseUrl + "/people/639812/timetable?start=2019-10-28&type=3" },
+    "timetable-profile-exam": { address: baseUrl + "/people/168062/timetable?start=2020-06-12&type=4" },
 
     "news-item_with-wide-image": { address: baseUrl + "/news/159935" },
     "news-item_with-small-image": { address: baseUrl + "/news/162380" },
@@ -115,6 +120,17 @@ const addresses = {
     },
 
     "feedback": { address: baseUrl + "/feedback" },
+
+    // suvorov's
+    "suv_football": { address: baseUrl + "/news/166585"},
+    "suv_edu-further": { address: baseUrl + "/edu/further"},
+    "suv_gnechto-gallery": { address: baseUrl + "/page/166141"},
+    "suv_sveden-common": {address: baseUrl + "/sveden/common"},
+    "suv_page-167937": {address: baseUrl + "/page/167937"},
+    "suv_page-167933": {address: baseUrl + "/page/167933"},
+    "suv_page-167932": {address: baseUrl + "/page/167932"},
+    "suv_depts-101": {address: baseUrl + "/depts/101", description: "additional info-block at the bottom"},
+    "suv_news-169211": {address: baseUrl + "/news/169211", description: "custom publish date"}
 };
 
 const directories = {

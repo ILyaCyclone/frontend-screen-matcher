@@ -1,4 +1,3 @@
-const fs = require("fs");
 var drawing = require('pngjs-draw'); // https://github.com/aloisdeniel/node-pngjs-draw
 var PNG = drawing(require('pngjs').PNG);
 

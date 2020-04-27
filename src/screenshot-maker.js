@@ -178,7 +178,12 @@ async function makeScreenshotsForAddressAndResolution(page
     // saveScreenshotPromises.push(new Promise((resolve, reject) =>
     fs.writeFile(baseFileName + '.png', imageBuffer
         , err => {
-            if (err) reject("Could not write file " + filename);
+            if (err) {
+                logger.error("Could not save screenshot filefor ${address.address} of ${resolutionKey}: " + err);
+            } else {
+                logger.debug(`Finish screenshot for ${address.address} of ${resolutionKey}`);
+            }
+            // if (err) reject("Could not write file " + filename);
             // madeScreenshotCount++;
             // resolve();
         }
@@ -195,7 +200,7 @@ async function makeScreenshotsForAddressAndResolution(page
         }
     }
 
-    logger.debug(`finish screenshot for ${address.address} of ${resolutionKey}`);
+    
 }
 
 
@@ -234,6 +239,18 @@ async function createPage(browser, addressObject) {
     //     // domain <string>
     //     // path <string>
     // });
+
+    
+    // if (config.redirects) {
+    //     await page.setRequestInterception(true);
+    //     page.on("request", interceptedRequest => {
+    //         if(config.redirects[interceptedRequest.url()] !== undefined) {
+    //             const targetUrl = config.redirects[interceptedRequest.url()];
+    //             logger.info(`redirecting ${interceptedRequest.url()} to ${targetUrl}`)
+    //             interceptedRequest.continue({url: targetUrl});
+    //         } else interceptedRequest.continue();
+    //     });
+    // }
 
     return page;
 }

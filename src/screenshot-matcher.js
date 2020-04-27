@@ -29,8 +29,8 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 
-const concurrency = 5;
-const pLimit = require('p-limit')(concurrency);
+// const concurrency = 5;
+// const pLimit = require('p-limit')(concurrency);
 
 
 

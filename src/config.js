@@ -67,7 +67,7 @@ const addresses = {
         ]
     },
     "admissions-degrees-rating": {
-        address: baseUrl + "/admissions/degrees/51259"
+        address: baseUrl + "/admissions/degrees/-51259"
         , waits: [{ type: "css", selector: ".applicants__list-table-wrap.applicants__list-table-wrap--bottom" }]
         , ignores: [
             { type: "css", selector: ".applicants__places-xs", description: "number of admissions mobile" },
@@ -102,6 +102,7 @@ const addresses = {
         , ignores: [{ type: "css", selector: ".people .info-block__header-text .text-secondary", description: "number of people" }]
     },
     "profile": { address: baseUrl + "/people/17" },
+    "debug-mode": { address: baseUrl + "/people/17?_debug" },
 
     "edu-programs": { address: baseUrl + "/edu/programs" },
     "speciality": {
@@ -148,6 +149,14 @@ const directories = {
     }
 };
 
+// const redirects = {
+//     "https://rut-miit.ru/resources/js/core.min.js": "http://10.242.101.40:8080/resources/js/core.min.js",
+//     "https://rut-miit.ru/resources/js/main.min.js": "http://10.242.101.40:8080/resources/js/main.min.js",
+//     "https://rut-miit.ru/resources/css/core.css":   "http://10.242.101.40:8080/resources/css/core.css",
+//     "https://rut-miit.ru/resources/css/main.css":   "http://10.242.101.40:8080/resources/css/main.css"
+// };
+
 module.exports.resolutions = resolutions;
 module.exports.addresses = addresses;
 module.exports.directories = directories;
+module.exports.redirects = redirects;
